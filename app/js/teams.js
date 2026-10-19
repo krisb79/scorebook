@@ -57,15 +57,30 @@ var Teams = (function () {
                 if (have && have.dirty && (have.updated || 0) > (t.updated || 0)) { push(code); return; }   // ours is newer
                 if (!have || JSON.stringify(stripLocal(have)) !== JSON.stringify(stripLocal(t))) { set(code, t); }
             })
-            .catch(function (e) {
+            .catch(function () {
                 setTimeout(function () { asked[code] = false; }, 20000);   // ask again later
-                // no laptop (the hosted app, or the stand-in is off): a team list on this device only, so the
-                // PLAYERS tab still works; the laptop's copy replaces it later unless it was edited here
-                if (!T[code]) { T[code] = { code: code, name: code, players: [], source: "DEVICE", updated: 0 }; store(key(code), T[code]); }
-                NOTE[code] = "No laptop stand-in - the team list is kept on this device" +
-                    (T[code].players.length ? "." : "; add players on the PLAYERS tab, or the roster comes from the Google Sheet.");
-                fire(code);
+                // no laptop (the online copy, or the stand-in is off): a sample roster that ships with the online
+                // copy (made-up players, teams/<CODE>.json), else a team list on this device only, so the PLAYERS
+                // tab still works; the laptop's copy replaces it later unless it was edited here
+                return sample(code).then(function (t) {
+                    var have = T[code];
+                    if (t && (!have || (!have.dirty && (!have.players.length || have.sample)))) { set(code, t); }
+                    if (!T[code]) { T[code] = { code: code, name: code, players: [], source: "DEVICE", updated: 0 }; store(key(code), T[code]); }
+                    NOTE[code] = T[code].sample ? "Sample roster (made-up players) - edit it on the PLAYERS tab, or the roster comes from the Google Sheet." :
+                        "No laptop stand-in - the team list is kept on this device" +
+                        (T[code].players.length ? "." : "; add players on the PLAYERS tab, or the roster comes from the Google Sheet.");
+                    fire(code);
+                });
             });
+    }
+    var sampled = {};
+    function sample(code) {
+        if (sampled[code]) { return Promise.resolve(null); }
+        sampled[code] = true;
+        return fetch("../teams/" + encodeURIComponent(code) + ".json", { cache: "no-cache" })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (t) { return t && t.players && t.players.length ? t : null; })
+            .catch(function () { return null; });
     }
     function stripLocal(t) { var o = {}, k; for (k in t) { if (t.hasOwnProperty(k) && k !== "dirty") { o[k] = t[k]; } } return o; }
 
