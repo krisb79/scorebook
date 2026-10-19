@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stats Logger</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- strip: score, period, possession, down & distance, ball on -->
+<!-- strip (GRIDIRON's): team blocks (name, timeout dots, BALL, score) and the middle (period, situation, menu) -->
+<header class="strip" id="strip">
+  <div class="sb away" id="sbAWAY"></div>
+  <div id="mid">
+    <button id="period" title="Period, timeouts, clock">-</button>
+    <button class="hbtn" id="zoomField" aria-pressed="false" title="Zoom: whole field, 50 yards, 25 yards">ZOOM</button>
+    <button id="situW" title="Tap to change the down &amp; distance"><div id="situ">-</div><div id="detail"></div></button>
+    <button class="hbtn" id="flipField" aria-pressed="false" title="Show the field the other way round">&#8644; FLIP</button>
+    <button id="menuBtn" aria-label="Menu" title="Menu">&#9776;</button>
+  </div>
+  <div class="sb home" id="sbHOME"></div>
+</header>
+
+<!-- dragging a play onto the field: the button copy, the dashed line, the magnifier -->
+<svg id="arc" aria-hidden="true"></svg>
+<div class="dragchip" id="dragChip" hidden></div>
+<div id="loupe" hidden><div></div><canvas width="400" height="160"></canvas></div>
+
+<!-- toast: never blocks the controls (pointer-events none except UNDO) -->
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button id="toastUndo">UNDO</button></div>
+
+
+
+<section class="playerstab" id="playersTab" hidden><iframe id="playersFrame" title="Players"></iframe></section>
+
+<main class="work" id="logTab">
+  <!-- row 1: the field (from GRIDIRON): the play buttons (drag one onto the field), the field, -1 / +1
+       (ZOOM / FLIP and the D&D are on the strip) -->
+  <section class="card" id="fieldCard">
+      <!-- the old preview line: its text shows in the strip's second line while a play is being dragged -->
+      <div id="preview" hidden></div>
+      <div class="playbtns oneline" id="playBtns">
+        <button data-play="PASS">PASS</button><button data-play="INC">INCOMPLETE</button><button data-play="INT">INTERCEPTION</button><button data-play="RUSH">RUSH</button><button data-play="FUM">FUMBLE</button><button data-play="PUNT">PUNT</button><button data-play="FG">FG</button><button data-play="OFFPEN">OFF PEN</button><button data-play="DEFPEN">DEF PEN</button>
+      </div>
+      <div class="playnow" id="playNow" hidden>-</div>
+      <!-- AWAY goal line on the left, AWAY going left to right (FLIP turns it round) -->
+      <div id="field" class="field" role="img" aria-label="Field"></div>
+      <div class="yrow">
+        <button class="btn" id="ym" aria-label="One yard less">-1</button>
+        <div class="yscrub" id="yScrub"><span>-</span><small></small></div>
+        <button class="btn" id="yp" aria-label="One yard more">+1</button>
+      </div>
+  </section>
+
+  <!-- row 2: the players (jersey slots), the drive card, the drive chart | the drive log -->
+  <div class="lrow three">
+    <div class="col">
+      <!-- PLAYERS: the jersey slots of the team with the ball (players.js) -->
+      <section class="card" id="playersCard"></section>
+      <section class="card" id="driveCard"></section>
+      <section class="card" id="chartCard"></section>
+    </div>
+    <div class="col">
+  <!-- plays / drives / log / team stats -->
+  <section class="pane lists">
+    <div class="head">
+      <div class="seg" id="listTabs">
+        <button data-v="plays" class="on">Plays</button><button data-v="drives">Drives</button><button data-v="log">Log</button>
+      </div>
+      <div class="seg" id="driveTeam" hidden>
+        <button data-v="ALL" class="on">All</button><button data-v="AWAY">AWAY</button><button data-v="HOME">HOME</button>
+      </div>
+      <button class="chip" id="playFilter" hidden></button>
+      <button class="btn foldall" id="foldAll" title="Fold / open every drive">COLLAPSE ALL</button>
+    </div>
+    <div class="scroll" id="listBody"></div>
+  </section>
+    </div>
+    <!-- the team stats, always showing: VS (both teams side by side) | AWAY | HOME (one team + its player lines) -->
+    <div class="col statcol">
+      <section class="pane"><div class="stathead"><div class="seg stattabs" id="statTabs"></div><button class="btn foldall" id="statFoldAll" title="Fold / open every section">COLLAPSE ALL</button></div><div class="scroll" id="boxBody"></div></section>
+    </div>
+  </div>
+</main>
+
+<!-- the menu (the strip's menu button): the pages (LOG | PLAYERS), GAME and the older entry panel -->
+<div class="scrim" id="drawerScrim" hidden></div>
+<aside class="drawer" id="drawer" aria-label="Menu">
+  <div class="dhd"><b>MENU</b><button class="btn" id="drawerGame">GAME: period, timeouts, score, new game</button><button class="btn" id="drawerClose" aria-label="Close the menu">&#10005;</button></div>
+  <div class="themeRow"><span class="k">PLAYER TRACKING</span><div class="seg" id="trackSeg" style="grid-template-columns:repeat(2,1fr)"><button data-track="on">ON</button><button data-track="off">OFF - TEAM STATS ONLY</button></div></div>
+  <div class="themeRow"><span class="k">THEME</span><div class="seg" id="themeSeg"><button data-theme="auto">AUTO</button><button data-theme="light">LIGHT</button><button data-theme="dark">DARK</button></div></div>
+  <!-- pages: LOG (the field, drives, plays) | PLAYERS (the team list: add / edit players, season stats) -->
+  <nav class="tabs" id="mainTabs">
+    <button data-tab="log" class="on">LOG</button><button data-tab="players">PLAYERS</button>
+  </nav>
+
+      <!-- the older entry panel: possession, sack, set spot, a missed play (also opened by EDIT on a logged play) -->
+      <details class="more" id="entryMore">
+        <summary>MORE: possession, sack, set spot, a missed play</summary>
+  <section class="pane entry" id="entry">
+    <div class="erow top">
+      <div class="seg poss" id="enPoss" aria-label="Possession"></div>
+      <div class="sp"></div>
+      <button class="btn" id="enGame">GAME</button>
+      <button class="btn undo" id="enUndo">UNDO</button>
+    </div>
+    <div class="emode" id="enMode" hidden></div>
+    <div class="types" id="enTypes"></div>
+    <div class="opts" id="enOpts"></div>
+    <div class="erow logrow">
+      <div class="spotbox">
+        <button class="btn sq" id="enMinus" data-act="nudge" data-v="-1" aria-label="Spot one yard left">&#9664;</button>
+        <div class="spotread" id="enSpot"></div>
+        <button class="btn sq" id="enPlus" data-act="nudge" data-v="1" aria-label="Spot one yard right">&#9654;</button>
+      </div>
+      <input id="enClock" class="clock" data-kp="clock" inputmode="none" placeholder="clock" autocomplete="off" aria-label="Game clock after the play (optional)">
+      <button class="logbtn" id="enLog" data-act="log">LOG</button>
+    </div>
+    <div class="why" id="enWhy"></div>
+  </section>
+      </details>
+</aside>
+
+<!-- the on-screen keypad (keypad.js): opens over a huddle -->
+<dialog class="kpad" id="kpad"><div id="kpBody"></div></dialog>
+
+<dialog class="huddle" id="huddle">
+  <div class="hhead"><h2 id="hTitle"></h2><button class="btn" data-act="close">Close</button></div>
+  <div class="hbody" id="hBody"></div>
+  <div class="hmsg" id="hMsg" role="status"></div>
+</dialog>
+
+<!-- game bar: pick a game, step back through its ops, timings -->
+<footer class="bar">
+  <select id="src" aria-label="Game"></select>
+  <span class="chip save" id="saveChip"></span><span class="chip sync" id="syncChip"></span>
+  <label class="btn">Open file<input type="file" id="file" accept=".json,.jsonl,application/json,application/x-ndjson" hidden></label>
+  <button class="btn" id="export">Export</button>
+  <div class="scrub">
+    <button class="btn sq" id="stepBack" aria-label="Back one op">&#8249;</button>
+    <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Replay up to op">
+    <button class="btn sq" id="stepFwd" aria-label="Forward one op">&#8250;</button>
+    <span class="lbl" id="scrubLbl"></span>
+    <button class="btn" id="goLive" hidden>Go live</button>
+  </div>
+  <details class="warn" id="warn" hidden><summary></summary><ul></ul></details>
+  <span class="hud" id="hudTap"></span><span class="hud" id="hudStore"></span><span class="hud" id="hudSync"></span><span class="hud" id="hudReplay"></span>
+  <span class="ver" id="ver"></span>
+</footer>
+
+<script src="../engine/ops.js"></script>
+<script src="../engine/engine.js"></script>
+<script src="../test/fixtures_bundle.js"></script>
+<script src="js/store.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/format.js"></script>
+<script src="js/keypad.js"></script>
+<script src="js/field.js"></script>
+<script src="js/view.js"></script>
+<script src="js/entry.js"></script>
+<script src="js/teams.js"></script>
+<script src="js/players.js"></script>
+<script src="js/center.js"></script>
+<script src="js/huddles.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

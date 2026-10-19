@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Players</title>
+<!-- stats/app/players.html - the stats app's PLAYERS tab (in an iframe of index.html). A copy of GRIDIRON's PLAYERS
+     page (statsapp/Rosters.html) wired to the app's own team list (js/teams.js in the parent page) instead of PLAYBOOK.
+     AWAY on the left, HOME on the right (this game's two teams), mirrored. Each team is 2 x 2:  outer column = player
+     list (search + PASSING / RUSHING / RECEIVING filters) over the number grid (0-99: filled = on the roster, tap to
+     edit; empty = tap to add that number);  inner column = bio over season stats for the player being edited.
+     SAVE writes the team on this device at once and to the laptop stand-in (data/stats_teams/<CODE>.json). -->
+<style>
+:root { --bg:#0b1017; --panel:#121a24; --card:#1a2430; --card2:#222e3c; --line:#2b3949; --text:#e8eef5; --text2:#9fb0c2; --muted:#6c7d90;
+  --blue:#2f6bff; --blue2:#4ea1ff; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; user-select:none; -webkit-user-select:none; font-size:15px; }
+button { font:inherit; color:inherit; background:var(--card2); border:1px solid var(--line); border-radius:9px; min-height:36px; font-weight:800; cursor:pointer; touch-action:manipulation; }
+button:active { transform:scale(.96); filter:brightness(1.25); }
+button:disabled { opacity:.35; pointer-events:none; }
+input { font:inherit; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:6px 9px; width:100%; min-width:0; user-select:text; -webkit-user-select:text; }
+input:focus { outline:none; border-color:var(--blue2); background:var(--bg); }
+input::placeholder { color:var(--muted); font-weight:600; }
+input.chg { border-color:var(--amber); }
+::-webkit-scrollbar { width:6px; height:6px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:#1f2934; border-radius:6px; } ::-webkit-scrollbar-button { display:none; height:0; width:0; }
+#app { position:absolute; inset:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; padding:6px; }
+.team { background:var(--panel); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; min-height:0; min-width:0; overflow:hidden; }
+.team .hd { display:flex; align-items:center; gap:10px; padding:8px 12px; font-weight:900; }
+.team.HOME .hd { flex-direction:row-reverse; }
+.team .hd .nm { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:1.15em; letter-spacing:.02em; }
+.team.HOME .hd .nm { text-align:right; }
+.team .hd .nm small { font-size:.62em; font-weight:800; opacity:.75; letter-spacing:.08em; margin:0 6px; }
+.team .hd .ct { font-size:.72em; font-weight:800; opacity:.85; white-space:nowrap; }
+.team .hd button { min-height:34px; padding:0 14px; font-size:.75em; background:rgba(0,0,0,.3); border-color:rgba(255,255,255,.4); color:inherit; }
+
+/* 2 x 2: AWAY = list | bio  over  grid | stats;  HOME mirrored */
+.team .bd { flex:1; min-height:0; display:grid; gap:8px; padding:8px; grid-template-rows:minmax(0,1fr) auto; }
+.team.AWAY .bd { grid-template-columns:var(--gw,460px) minmax(0,1fr); grid-template-areas:"list bio" "grid stats"; }
+.team.HOME .bd { grid-template-columns:minmax(0,1fr) var(--gw,460px); grid-template-areas:"bio list" "stats grid"; }
+.cell { background:var(--card); border:1px solid var(--line); border-radius:10px; min-height:0; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+.cell > h3 { margin:0; padding:7px 10px 0; font-size:.66em; letter-spacing:.1em; color:var(--text2); display:flex; align-items:center; gap:8px; }
+.cell > h3 span { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.c-list { grid-area:list; padding:7px; gap:6px; }
+.c-grid { grid-area:grid; padding:6px; background:transparent; border:0; align-items:center; justify-content:center; }
+.c-bio { grid-area:bio; }
+.c-stats { grid-area:stats; }
+.hint { flex:1; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--muted); font-size:.85em; padding:12px; }
+.cell.open .hint { display:none; } .cell .body { display:none; } .cell.open .body { display:flex; }
+.c-bio.add { border-color:var(--green); }
+
+.srch { display:flex; gap:6px; } .srch input { font-size:1em; font-weight:700; } .srch button { padding:0 12px; font-size:.72em; }
+.flt { display:grid; gap:4px; }
+.flt button { min-height:32px; font-size:.7em; letter-spacing:.06em; padding:0; }
+.flt button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+.pl .st { color:var(--text); font-weight:800; text-align:right; }
+.list { flex:1; min-height:0; overflow:auto; touch-action:pan-y; display:flex; flex-direction:column; gap:3px; }
+.pl { display:grid; grid-template-columns:40px minmax(0,1fr); gap:6px; align-items:center; background:var(--card2); border:1px solid var(--line); border-radius:8px; padding:5px 7px; cursor:pointer; touch-action:manipulation; font-size:.88em; }
+.pl:active { filter:brightness(1.3); }
+.pl.sel { border-color:#fff; }
+.pl.off, .grid button.on.off { opacity:.45; }
+.pl b { font-size:1.05em; text-align:center; border-radius:6px; padding:2px 0; }
+.pl .n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:700; }
+.pl span { color:var(--text2); font-size:.85em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.empty { color:var(--muted); font-size:.85em; padding:14px 4px; text-align:center; }
+
+.grid { display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
+.grid button { min-height:0; padding:0; border-radius:7px; font-size:.95em; font-weight:900; background:#141b24; border-color:#1d2632; color:#3c4a5a; }
+.grid button.on { color:#fff; }
+.grid button.dim { opacity:.22; }
+.grid button.hit { box-shadow:0 0 0 2px var(--amber); }
+.grid button.sel { box-shadow:0 0 0 3px #fff; position:relative; z-index:1; }
+
+.c-bio .body { flex:1; flex-direction:column; gap:9px; padding:9px 10px 10px; min-height:0; }
+.row { display:grid; gap:7px; }
+.r1 { grid-template-columns:80px minmax(0,1fr) minmax(0,1fr); }
+label, .lb { display:flex; flex-direction:column; gap:3px; font-size:.62em; font-weight:800; color:var(--text2); letter-spacing:.08em; min-width:0; }
+.c-bio input { font-size:1.5em; font-weight:800; padding:6px 9px; }
+.c-bio input.jn { text-align:center; }
+.gr { display:grid; gap:3px; flex:1; }
+.gr button { min-height:44px; font-size:.95em; padding:0; }
+.gr button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+.gr.chg button.on { background:var(--amber); border-color:var(--amber); color:#1a1000; }
+.bt { display:flex; gap:6px; margin-top:auto; }
+.bt button { min-height:48px; padding:0 18px; }
+.bt .save { flex:1; background:#14532d; border-color:var(--green); }
+.bt .del { background:#3a1414; border-color:var(--red); }
+.bt .del.arm { background:var(--red); color:#fff; }
+.bt .act.off { background:#3a2a0a; border-color:var(--amber); color:var(--amber); }
+.bt .act.chg { box-shadow:0 0 0 2px var(--amber); }
+.team.HOME .bt { flex-direction:row-reverse; }
+
+.c-stats .body { flex:1; flex-direction:column; gap:6px; padding:8px 10px 10px; min-height:0; overflow:auto; }
+.sg { display:grid; gap:5px; align-items:end; }
+.sg > b { font-size:.66em; letter-spacing:.08em; color:var(--text2); padding-bottom:9px; }
+.sg label { font-size:.56em; text-align:center; }
+.sg input { font-size:1.05em; font-weight:800; text-align:center; padding:6px 2px; }
+.sg input.calc { color:var(--text2); }
+#toast { position:fixed; left:50%; bottom:10px; transform:translateX(-50%) translateY(120px); background:#fff; color:#0b1017; border-radius:12px; padding:8px 14px; font-weight:700; transition:transform .2s; z-index:90; }
+#toast.show { transform:translateX(-50%); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+var R = null, SP = null;
+var SIDES = ['AWAY', 'HOME'];
+// Everything sport-specific comes from the sport profile PLAYBOOK sends with the roster (sports/<id>.json):
+//   SP.player.fields   the player's extra fields: { key, label, choices?, maxlength?, numeric?, list?, listWidth?, search? }
+//   SP.player.bioRows  how those fields sit under # / FIRST / LAST, e.g. [["pos", "grade"], ["hgt", "wgt"]]
+//   SP.stats.season    stat groups: { id, label, fields: [{ key, label, calc?, parts?, sep? }], filter?: { count, total, unit } }
+// The page itself only knows the core: number, first / last name, active.
+// Per side: open = editing, sel = jersey being edited ('' = adding), q = search, f = filter group, ch = choice values,
+// active = the ACTIVE toggle, orig = values when opened
+var UI = { AWAY: { open: false, sel: '', q: '', f: '', ch: {}, active: true, orig: null, delArm: 0 }, HOME: { open: false, sel: '', q: '', f: '', ch: {}, active: true, orig: null, delArm: 0 } };
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+var toastT = null; function toast(t) { var el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 2400); }
+function textOn(hex) { var m = String(hex || '').match(/^#?([0-9a-f]{6})$/i); if (!m) return '#fff'; var n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#0b1017' : '#fff'; }
+function col(side) { var c = R && R[side] && R[side].color; return /^#?[0-9a-f]{6}$/i.test(c || '') ? (c.charAt(0) == '#' ? c : '#' + c) : (side == 'AWAY' ? '#1f56d6' : '#b4232c'); }
+// ---- The app's team list (the parent page's Teams / App) instead of PLAYBOOK's /api ----
+var PAR = window.parent, Teams = PAR.Teams, App = PAR.App;
+function codeOf(side) { return App && App.result ? App.result.codes[side] : side; }
+function teamView(side) {
+  var c = codeOf(side), t = Teams.get(c), su = (App && App.game && App.game.setup) || {}, gt = (side == 'AWAY' ? su.away : su.home) || {};
+  return { loaded: !!t, code: c, name: String((t && t.name && t.name != c ? t.name : gt.name) || c).toUpperCase(), mascot: (t && t.mascot) || '',
+    color: (t && t.color) || '', players: t ? t.players : [], note: Teams.note(c) };
+}
+function bySide(side, fn) {
+  var c = codeOf(side), t = JSON.parse(JSON.stringify(Teams.get(c) || { code: c, name: c, players: [] }));
+  fn(t.players);
+  t.players.sort(function (a, b) { return (Number(a.jersey) || 0) - (Number(b.jersey) || 0); });
+  return Teams.save(c, t).then(function (sent) { if (!sent) toast(Teams.note(c) || 'Saved on this device'); });
+}
+function idxOf(ps, j) { for (var i = 0; i < ps.length; i++) if (String(ps[i].jersey) == String(j)) return i; return -1; }
+function call(action, args, done) {
+  var r = { ok: true };
+  try {
+    if (action == 'rosterSave') bySide(args.side, function (ps) {
+      var old = args.orig !== '' ? idxOf(ps, args.orig) : -1, np = {}, k;
+      if (old >= 0) { for (k in ps[old]) np[k] = ps[old][k]; ps.splice(old, 1); }   // keeps fields this page doesn't edit
+      for (k in args.p) np[k] = args.p[k];
+      np.season = args.season;
+      if (idxOf(ps, np.jersey) >= 0) ps.splice(idxOf(ps, np.jersey), 1);
+      ps.push(np);
+    });
+    else if (action == 'rosterDelete') bySide(args.side, function (ps) { var i = idxOf(ps, args.jersey); if (i >= 0) ps.splice(i, 1); });
+    load();
+  } catch (e) { r = { ok: false, error: String(e && e.message || e) }; toast(r.error); }
+  if (done) done(r);
+}
+function load() {
+  var sp = Teams.sport();
+  if (!sp) { $('app').innerHTML = '<div class="hint" style="grid-column:1/-1">Waiting for the sport profile from the laptop stand-in (start it, then come back to this tab).</div>'; return; }
+  if (!SP) { SP = sp; $('app').innerHTML = '<div class="team AWAY" id="tAWAY"></div><div class="team HOME" id="tHOME"></div>'; SIDES.forEach(build); }
+  R = { AWAY: teamView('AWAY'), HOME: teamView('HOME') };
+  if (built != codeOf('AWAY') + '|' + codeOf('HOME')) { built = codeOf('AWAY') + '|' + codeOf('HOME'); SIDES.forEach(function (sd) { if (UI[sd].open) closeEditor(sd); }); }
+  renderAll();
+}
+var built = '', later = false;
+// The parent calls this when a team changes (here, on another device via the stand-in, or a new game); not while typing.
+window.refresh = function () {
+  if (document.activeElement && document.activeElement.tagName == 'INPUT') { later = true; return; }
+  later = false; load();
+};
+document.addEventListener('focusout', function () { if (later) setTimeout(window.refresh, 50); });
+
+// ---- Sport profile ----
+function fields() { return (SP && SP.player && SP.player.fields) || []; }
+function field(k) { var fs = fields(); for (var i = 0; i < fs.length; i++) if (fs[i].key == k) return fs[i]; return null; }
+function groups() { return (SP && SP.stats && SP.stats.season) || []; }
+function group(id) { var gs = groups(); for (var i = 0; i < gs.length; i++) if (gs[i].id == id) return gs[i]; return null; }
+function numberMax() { var m = SP && SP.player ? Number(SP.player.numberMax) : NaN; return m >= 0 ? m : 99; }
+// A group's inputs: a field with parts is one input per part (COMP and ATT for CATT "97/162").
+function inputsOf(g) {
+  var out = [];
+  (g.fields || []).forEach(function (s) { if (s.parts) s.parts.forEach(function (pt) { out.push(pt); }); else out.push(s); });
+  return out;
+}
+
+function players(side) { return R && R[side] ? R[side].players : []; }
+function find(side, j) { var ps = players(side); for (var i = 0; i < ps.length; i++) if (String(ps[i].jersey) == String(j)) return ps[i]; return null; }
+function full(p) { return (p.first + ' ' + p.last).trim(); }
+// Filter buttons (groups with a filter): players with season stats in that group (a count or total that isn't empty / 0),
+// highest total first.
+function hasStats(p, f) {
+  var g = p.season && p.season[f], fl = group(f) && group(f).filter; if (!g || !fl) return false;
+  return [fl.count, fl.total].some(function (k) { var v = String(g[k] || '').split('/').pop().trim(); return v !== '' && parseFloat(v) !== 0; });
+}
+function total(p, f) { return parseFloat(p.season && p.season[f] ? p.season[f][group(f).filter.total] : '') || 0; }
+// what the list shows next to the name while filtering, e.g. C/ATT-YDS, CAR-YDS
+function statText(p, f) {
+  var g = p.season[f], fl = group(f).filter;
+  return esc((g[fl.count] || '0') + '  ' + (g[fl.total] || '0') + (fl.unit ? ' ' + fl.unit : ''));
+}
+function shown(side, p) { var u = UI[side]; return matches(p, u.q) && (!u.f || hasStats(p, u.f)); }
+function matches(p, q) {
+  q = q.trim().toLowerCase(); if (!q) return true;
+  if (/^\d+$/.test(q)) return String(p.jersey).indexOf(q) == 0;
+  var hay = full(p);
+  fields().forEach(function (f) { if (f.search) hay += ' ' + (p[f.key] || ''); });
+  hay = hay.toLowerCase();
+  return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
+}
+
+// ---- Build each side once (after the first answer brings the profile); refreshes only redraw header / grid / list ----
+function build(side) {
+  var el = $('t' + side), h = '', flt = groups().filter(function (g) { return g.filter; });
+  h += '<div class="hd" id="hd' + side + '"><div class="nm" id="nm' + side + '"></div><span class="ct" id="ct' + side + '"></span><button data-act="add">+ ADD PLAYER</button></div>';
+  h += '<div class="bd" id="bd' + side + '">';
+  // list
+  h += '<div class="cell c-list"><div class="srch"><input id="q' + side + '" placeholder="Search name or number" spellcheck="false" autocomplete="off"><button data-act="clr">CLEAR</button></div>'
+    + '<div class="flt" id="f' + side + '" style="grid-template-columns:repeat(' + (flt.length + 1) + ',1fr)"><button data-flt="" class="on">ALL</button>';
+  flt.forEach(function (g) { h += '<button data-flt="' + esc(g.id) + '">' + esc(g.label) + '</button>'; });
+  h += '</div><div class="list" id="l' + side + '"></div></div>';
+  // grid
+  h += '<div class="cell c-grid"><div class="grid" id="g' + side + '"></div></div>';
+  // bio: the core (number, name) then the profile's fields, row by row
+  h += '<div class="cell c-bio" id="bio' + side + '"><h3><span id="edt' + side + '">BIO</span></h3><div class="hint">Tap a player or a number to edit<br>Tap an empty number to add a player</div><div class="body">';
+  h += '<div class="row r1"><label>#<input class="jn" data-f="jersey" inputmode="numeric" maxlength="' + String(numberMax()).length + '"></label><label>FIRST<input data-f="first" spellcheck="false" autocomplete="off"></label><label>LAST<input data-f="last" spellcheck="false" autocomplete="off"></label></div>';
+  (SP.player.bioRows || fields().map(function (f) { return [f.key]; })).forEach(function (row) {
+    var cols = [], cells = '';
+    row.forEach(function (k) {
+      var f = field(k); if (!f) return;
+      if (f.choices) {
+        cols.push('minmax(0,1.6fr)');
+        cells += '<div class="lb">' + esc(f.label) + '<div class="gr" data-chs="' + esc(f.key) + '" style="grid-template-columns:repeat(' + f.choices.length + ',1fr)">';
+        f.choices.forEach(function (c) { cells += '<button data-ch="' + esc(f.key) + '" data-v="' + esc(c) + '">' + esc(c) + '</button>'; });
+        cells += '</div></div>';
+      } else {
+        cols.push('minmax(0,1fr)');
+        cells += '<label>' + esc(f.label) + '<input data-f="' + esc(f.key) + '" spellcheck="false" autocomplete="off"' + (f.numeric ? ' inputmode="numeric"' : '') + (f.maxlength ? ' maxlength="' + f.maxlength + '"' : '') + '></label>';
+      }
+    });
+    if (cols.length) h += '<div class="row" style="grid-template-columns:' + cols.join(' ') + '">' + cells + '</div>';
+  });
+  h += '<div class="bt"><button class="save" data-act="save">SAVE</button><button data-act="cancel">CANCEL</button><button class="act" data-act="active">ACTIVE</button><button class="del" data-act="del">DELETE</button></div></div></div>';
+  // season stats
+  var most = 0; groups().forEach(function (g) { most = Math.max(most, inputsOf(g).length); });
+  h += '<div class="cell c-stats" id="st' + side + '"><h3><span>SEASON STATS</span></h3><div class="hint">Season stats for the player being edited</div><div class="body">';
+  groups().forEach(function (g) {
+    h += '<div class="sg" style="grid-template-columns:76px repeat(' + most + ',minmax(0,1fr))"><b>' + esc(g.label) + '</b>';
+    inputsOf(g).forEach(function (s) { h += '<label>' + esc(s.label) + '<input data-s="' + esc(g.id + '.' + s.key) + '"' + (s.calc ? ' class="calc"' : '') + ' inputmode="decimal" maxlength="7" autocomplete="off"></label>'; });
+    h += '</div>';
+  });
+  h += '</div></div></div>';
+  el.innerHTML = h;
+  var gh = ''; for (var n = 0; n <= numberMax(); n++) gh += '<button data-n="' + n + '">' + n + '</button>';
+  $('g' + side).innerHTML = gh;
+
+  el.addEventListener('click', function (e) {
+    var b = e.target.closest('button,[data-j]'); if (!b) return;
+    if (b.dataset.n != null) { tapNumber(side, b.dataset.n); return; }
+    if (b.dataset.j != null) { openEditor(side, b.dataset.j); return; }
+    if (b.dataset.flt != null) { var uf = UI[side]; uf.f = uf.f == b.dataset.flt ? '' : b.dataset.flt;
+      $('f' + side).querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x.dataset.flt == uf.f); }); draw(side); return; }
+    if (b.dataset.ch) { var u = UI[side], k = b.dataset.ch; u.ch[k] = u.ch[k] == b.dataset.v ? '' : b.dataset.v; drawChoices(side); return; }
+    var act = b.dataset.act;
+    if (act == 'add') openEditor(side, '', firstFree(side));
+    else if (act == 'clr') { $('q' + side).value = ''; UI[side].q = ''; draw(side); }
+    else if (act == 'save') save(side);
+    else if (act == 'cancel') closeEditor(side);
+    else if (act == 'active') { UI[side].active = !UI[side].active; drawActive(side); }
+    else if (act == 'del') del(side);
+  });
+  $('q' + side).addEventListener('input', function () { UI[side].q = this.value; draw(side); });
+  $('q' + side).addEventListener('keydown', function (e) {
+    if (e.key != 'Enter') return;
+    var q = this.value.trim(), hits = players(side).filter(function (p) { return shown(side, p); });
+    if (/^\d+$/.test(q) && Number(q) <= numberMax()) tapNumber(side, String(Number(q)));
+    else if (hits.length == 1) openEditor(side, hits[0].jersey);
+  });
+  [$('bio' + side), $('st' + side)].forEach(function (c) {
+    c.addEventListener('input', function (e) { if (e.target.dataset.s) autoCalc(side, e.target.dataset.s); markChanged(side); });
+    c.addEventListener('keydown', function (e) { if (e.key == 'Enter') save(side); else if (e.key == 'Escape') closeEditor(side); });
+  });
+}
+
+function firstFree(side) { for (var n = 1; n <= numberMax(); n++) if (!find(side, n)) return String(n); return ''; }
+function tapNumber(side, n) { if (find(side, n)) openEditor(side, n); else openEditor(side, '', n); }
+
+function bioInputs(side) { return $('bio' + side).querySelectorAll('input[data-f]'); }
+function statInputs(side) { return $('st' + side).querySelectorAll('input[data-s]'); }
+function statInput(side, key) { return $('st' + side).querySelector('input[data-s="' + key + '"]'); }
+// flat form values: bio fields by key, active, stats as 'group.KEY' (a field with parts split into its parts)
+function flatOf(p) {
+  var o = { jersey: '', first: '', last: '' };
+  fields().forEach(function (f) { o[f.key] = ''; });
+  if (p) for (var k in o) o[k] = p[k] == null ? '' : String(p[k]);
+  o.active = !p || p.active !== false;
+  groups().forEach(function (g) {
+    var src = p && p.season && p.season[g.id] ? p.season[g.id] : {};
+    (g.fields || []).forEach(function (s) {
+      if (s.parts) { var vals = String(src[s.key] || '').split(s.sep || '/'); s.parts.forEach(function (pt, i) { o[g.id + '.' + pt.key] = (vals[i] || '').trim(); }); }
+      else o[g.id + '.' + s.key] = src[s.key] == null ? '' : String(src[s.key]);
+    });
+  });
+  return o;
+}
+function formNow(side) {
+  var u = UI[side], o = { active: u.active };
+  for (var k in u.ch) o[k] = u.ch[k] || '';
+  bioInputs(side).forEach(function (i) { o[i.dataset.f] = i.value.trim(); });
+  statInputs(side).forEach(function (i) { o[i.dataset.s] = i.value.trim(); });
+  return o;
+}
+// Calculated stats (calc: { pct: [a, b] } or { ratio: [a, b] }) follow their inputs as you type
+function autoCalc(side, key) {
+  var gid = key.split('.')[0], k = key.slice(gid.length + 1), g = group(gid); if (!g) return;
+  function num(x) { var i = statInput(side, gid + '.' + x), v = i ? parseFloat(i.value) : NaN; return isNaN(v) ? null : v; }
+  (g.fields || []).forEach(function (f) {
+    var c = f.calc, op = c && (c.pct || c.ratio); if (!op || op.indexOf(k) < 0) return;
+    var a = num(op[0]), b = num(op[1]), d = c.digits != null ? c.digits : 1;
+    if (a == null || !b) return;
+    statInput(side, gid + '.' + f.key).value = c.pct ? (a / b * 100).toFixed(d) + '%' : (a / b).toFixed(d);
+  });
+}
+function choiceBoxes(side) { return $('bio' + side).querySelectorAll('.gr[data-chs]'); }
+function drawChoices(side) {
+  var u = UI[side];
+  choiceBoxes(side).forEach(function (gr) { var v = u.ch[gr.dataset.chs] || ''; gr.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.v == v); }); });
+  markChanged(side);
+}
+function drawActive(side) {
+  var b = $('bio' + side).querySelector('[data-act="active"]'), on = UI[side].active;
+  b.textContent = on ? 'ACTIVE' : 'INACTIVE'; b.classList.toggle('off', !on);
+  markChanged(side);
+}
+function markChanged(side) {
+  var u = UI[side]; if (!u.orig) return;
+  bioInputs(side).forEach(function (i) { i.classList.toggle('chg', i.value.trim() != u.orig[i.dataset.f]); });
+  statInputs(side).forEach(function (i) { i.classList.toggle('chg', i.value.trim() != u.orig[i.dataset.s]); });
+  choiceBoxes(side).forEach(function (gr) { var k = gr.dataset.chs; gr.classList.toggle('chg', (u.ch[k] || '') != String(u.orig[k] || '').toUpperCase()); });
+  $('bio' + side).querySelector('[data-act="active"]').classList.toggle('chg', u.active != u.orig.active);
+}
+
+// j = jersey to edit, or '' to add (prefill = the number to add)
+function openEditor(side, j, prefill) {
+  var u = UI[side], p = j !== '' ? find(side, j) : null;
+  if (j !== '' && !p) return;
+  u.open = true; u.sel = p ? String(p.jersey) : ''; clearTimeout(u.delArm); u.delArm = 0;
+  u.orig = flatOf(p); if (!p) u.orig.jersey = prefill || '';
+  u.ch = {}; fields().forEach(function (f) { if (f.choices) u.ch[f.key] = String(u.orig[f.key] || '').toUpperCase(); });
+  u.active = u.orig.active;
+  var bio = $('bio' + side), st = $('st' + side);
+  bio.classList.add('open'); st.classList.add('open'); bio.classList.toggle('add', !p);
+  $('edt' + side).textContent = p ? 'EDIT #' + p.jersey + '  ' + full(p).toUpperCase() : 'ADD PLAYER' + (prefill ? '  #' + prefill : '');
+  bioInputs(side).forEach(function (i) { i.value = u.orig[i.dataset.f]; i.classList.remove('chg'); });
+  statInputs(side).forEach(function (i) { i.value = u.orig[i.dataset.s]; i.classList.remove('chg'); });
+  var del = bio.querySelector('.del'); del.disabled = !p; del.classList.remove('arm'); del.textContent = 'DELETE';
+  drawChoices(side); drawActive(side); draw(side);
+  if (!p) { var f = bio.querySelector(prefill ? 'input[data-f="first"]' : 'input[data-f="jersey"]'); setTimeout(function () { f.focus(); }, 30); }
+}
+function closeEditor(side) {
+  var u = UI[side]; u.open = false; u.sel = ''; u.orig = null;
+  ['bio', 'st'].forEach(function (k) { var c = $(k + side); c.classList.remove('open'); if (document.activeElement && c.contains(document.activeElement)) document.activeElement.blur(); });
+  $('edt' + side).textContent = 'BIO';
+  draw(side);
+}
+
+function save(side) {
+  var u = UI[side], v = formNow(side), max = numberMax();
+  if (!/^\d+$/.test(v.jersey) || Number(v.jersey) > max) { toast('Number must be 0-' + max); return; }
+  v.jersey = String(Number(v.jersey));
+  if (!v.first && !v.last) { toast('Enter a name'); return; }
+  var clash = find(side, v.jersey);
+  if (clash && String(clash.jersey) != u.sel) { toast('#' + v.jersey + ' is already ' + full(clash)); return; }
+  var season = {};
+  groups().forEach(function (g) {
+    var s = season[g.id] = {};
+    (g.fields || []).forEach(function (f) {
+      if (!f.parts) { s[f.key] = v[g.id + '.' + f.key]; return; }
+      var vals = f.parts.map(function (pt) { return v[g.id + '.' + pt.key]; });
+      s[f.key] = vals.some(function (x) { return x; }) ? vals.map(function (x) { return x || '0'; }).join(f.sep || '/') : '';
+    });
+  });
+  var p = { jersey: v.jersey, first: v.first, last: v.last, active: v.active };
+  fields().forEach(function (f) { if (v[f.key] != null) p[f.key] = v[f.key]; });
+  var btn = $('bio' + side).querySelector('.save'); btn.disabled = true; btn.textContent = 'SAVING...';
+  call('rosterSave', { side: side, orig: u.sel, p: p, season: season }, function (r) {
+    btn.disabled = false; btn.textContent = 'SAVE';
+    if (!r.ok) return;
+    toast((u.sel ? 'Saved #' : 'Added #') + v.jersey + ' ' + (v.first + ' ' + v.last).trim());
+    if (u.sel) closeEditor(side);
+    else openEditor(side, '', firstFree(side));   // adding: ready for the next one
+  });
+}
+function del(side) {
+  var u = UI[side], b = $('bio' + side).querySelector('.del');
+  if (!u.sel) return;
+  if (!u.delArm) { u.delArm = setTimeout(function () { u.delArm = 0; b.classList.remove('arm'); b.textContent = 'DELETE'; }, 2500); b.classList.add('arm'); b.textContent = 'TAP AGAIN'; return; }
+  clearTimeout(u.delArm); u.delArm = 0;
+  var j = u.sel, p = find(side, j);
+  call('rosterDelete', { side: side, jersey: j }, function (r) { if (r.ok) { toast('Deleted #' + j + (p ? ' ' + full(p) : '')); closeEditor(side); } });
+}
+
+// ---- Redraw ----
+function renderAll() { SIDES.forEach(draw); size(); }
+function draw(side) {
+  if (!R || !SP) return;
+  var T = R[side], c = col(side), on = textOn(c), u = UI[side], q = u.q.trim();
+  var hd = $('hd' + side); hd.style.background = c; hd.style.color = on;
+  $('nm' + side).innerHTML = T.loaded ? esc(T.name) + (T.mascot ? '<small>' + esc(T.mascot) + '</small>' : '') : esc(T.code || side) + ' <small>NO TEAM LIST YET - START THE LAPTOP STAND-IN</small>';
+  hd.title = T.note || '';
+  $('ct' + side).textContent = side + '  |  ' + T.players.length + ' PLAYERS';
+  hd.querySelector('button').disabled = !T.loaded;
+  var have = {}; T.players.forEach(function (p) { have[p.jersey] = p; });
+  var addN = u.open && !u.sel && u.orig && u.orig.jersey !== '' ? String(Number(u.orig.jersey)) : null;
+  $('g' + side).querySelectorAll('button').forEach(function (b) {
+    var n = b.dataset.n, p = have[n], active = q || u.f, hit = active && p && shown(side, p);
+    b.classList.toggle('on', !!p);
+    b.classList.toggle('off', !!(p && p.active === false));
+    b.style.background = p ? c : ''; b.style.borderColor = p ? c : ''; b.style.color = p ? on : '';
+    b.classList.toggle('dim', !!(active && p && !hit));
+    b.classList.toggle('hit', !!(q && hit));   // amber ring for search hits; a filter alone just dims the rest
+    b.classList.toggle('sel', u.open && (u.sel ? u.sel == n : addN == n));
+    b.title = p ? '#' + n + ' ' + full(p) + (p.active === false ? ' (inactive)' : '') : 'Add #' + n;
+  });
+  // list columns: number, name, then the profile's list fields (or the filter's stat text)
+  var lf = fields().filter(function (f) { return f.list; });
+  var cols = '40px minmax(0,1fr) ' + (u.f ? 'auto' : lf.map(function (f) { return (f.listWidth || 40) + 'px'; }).join(' '));
+  var list = T.players.filter(function (p) { return shown(side, p); }), h = '';
+  if (u.f) list.sort(function (a, b) { return total(b, u.f) - total(a, u.f); });
+  list.forEach(function (p) {
+    h += '<div class="pl' + (u.open && u.sel == p.jersey ? ' sel' : '') + (p.active === false ? ' off' : '') + '" data-j="' + esc(p.jersey) + '" style="grid-template-columns:' + cols + '"><b style="background:' + c + ';color:' + on + '">' + esc(p.jersey) + '</b>'
+      + '<div class="n">' + esc(full(p)) + '</div>' + (u.f ? '<span class="st">' + statText(p, u.f) + '</span>' : lf.map(function (f) { return '<span>' + esc(p[f.key]) + '</span>'; }).join('')) + '</div>';
+  });
+  if (!list.length) h = '<div class="empty">' + (T.loaded ? (q || u.f ? 'No players match' + (q ? ' "' + esc(q) + '"' : '') + (u.f ? ' with ' + esc(group(u.f).label.toLowerCase()) + ' stats' : '') : 'No players yet - tap a number or + ADD PLAYER') : esc(T.note || 'Waiting for the team list from the laptop stand-in')) + '</div>';
+  $('l' + side).innerHTML = h;
+}
+// The number grid: square cells, 10 across; the outer column is as wide as the grid. Up to ~half the side's width and
+// ~58% of its height, so the list above still shows a good run of players.
+function size() {
+  if (!SP) return;
+  var rows = Math.ceil((numberMax() + 1) / 10);
+  SIDES.forEach(function (side) {
+    var bd = $('bd' + side); if (!bd) return;
+    var w = bd.clientWidth - 16, h = bd.clientHeight - 16;
+    var cell = Math.floor(Math.max(18, Math.min((h * 0.58 - 27 - 12) / rows, (w * 0.5 - 27 - 12) / 10)));
+    var g = $('g' + side); g.style.gridTemplateColumns = 'repeat(10,' + cell + 'px)'; g.style.gridAutoRows = cell + 'px';
+    g.style.fontSize = Math.max(10, Math.round(cell * 0.36)) + 'px';
+    bd.style.setProperty('--gw', (cell * 10 + 27 + 12) + 'px');
+  });
+}
+window.addEventListener('resize', size);
+
+(function boot() { load(); })();
+</script>
+</body>
+</html>
