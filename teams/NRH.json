@@ -1,0 +1,1524 @@
+{
+ "code": "NRH",
+ "name": "NOVA RIDGE",
+ "mascot": "CYBER LEGION",
+ "color": "#01F8FB",
+ "color2": "#087FC1",
+ "players": [
+  {
+   "jersey": "1",
+   "first": "Mason",
+   "last": "Ingram",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'0\"",
+   "wgt": "190",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "38",
+     "RECLONG": "52",
+     "RECTDS": "4",
+     "RECYDS": "651",
+     "YPREC": "17.1"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "10",
+     "TFL": "1.5",
+     "TOT": "12.0"
+    }
+   }
+  },
+  {
+   "jersey": "2",
+   "first": "Asher",
+   "last": "Tolliver",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'0\"",
+   "wgt": "180",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "4",
+     "RECLONG": "24",
+     "RECTDS": "1",
+     "RECYDS": "43",
+     "YPREC": "10.8"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "22",
+     "TFL": "0.5",
+     "TOT": "25.5"
+    }
+   }
+  },
+  {
+   "jersey": "4",
+   "first": "Cruz",
+   "last": "Blevins",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'10\"",
+   "wgt": "170",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "25",
+     "TFL": "1.5",
+     "TOT": "32.0"
+    }
+   }
+  },
+  {
+   "jersey": "5",
+   "first": "Kellen",
+   "last": "Radford",
+   "active": true,
+   "pos": "QB/DB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'11\"",
+   "wgt": "175",
+   "season": {
+    "passing": {
+     "CATT": "9/18",
+     "INT": "1",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "131",
+     "PCT": "50.0%",
+     "RTG": "100.0",
+     "YPPASS": "7.3"
+    },
+    "rushing": {
+     "CAR": "9",
+     "RUSHINGLONG": "8",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "24",
+     "YPRUSH": "2.7"
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "8",
+     "TFL": "",
+     "TOT": "9.0"
+    }
+   }
+  },
+  {
+   "jersey": "6",
+   "first": "Holden",
+   "last": "Vance",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'9\"",
+   "wgt": "145",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "8",
+     "RECLONG": "13",
+     "RECTDS": "1",
+     "RECYDS": "83",
+     "YPREC": "10.4"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "32",
+     "TFL": "2.0",
+     "TOT": "37.5"
+    }
+   }
+  },
+  {
+   "jersey": "7",
+   "first": "Jace",
+   "last": "Yardley",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'11\"",
+   "wgt": "165",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "32",
+     "RECLONG": "67",
+     "RECTDS": "6",
+     "RECYDS": "437",
+     "YPREC": "13.7"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "11",
+     "TFL": "2.0",
+     "TOT": "15.5"
+    }
+   }
+  },
+  {
+   "jersey": "8",
+   "first": "Lukas",
+   "last": "Ledger",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'10\"",
+   "wgt": "185",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "48",
+     "RUSHINGLONG": "41",
+     "RUSHINGTDS": "4",
+     "RUSHINGYDS": "251",
+     "YPRUSH": "5.2"
+    },
+    "receiving": {
+     "REC": "6",
+     "RECLONG": "21",
+     "RECTDS": "",
+     "RECYDS": "51",
+     "YPREC": "8.5"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "23",
+     "TFL": "4.0",
+     "TOT": "33.0"
+    }
+   }
+  },
+  {
+   "jersey": "9",
+   "first": "Jace",
+   "last": "Ostrander",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'8\"",
+   "wgt": "165",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "26",
+     "TFL": "1.5",
+     "TOT": "31.5"
+    }
+   }
+  },
+  {
+   "jersey": "10",
+   "first": "Malik",
+   "last": "Upton",
+   "active": true,
+   "pos": "QB",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'3\"",
+   "wgt": "200",
+   "season": {
+    "passing": {
+     "CATT": "81/126",
+     "INT": "2",
+     "PASSINGTDS": "12",
+     "PASSINGYDS": "925",
+     "PCT": "64.3%",
+     "RTG": "154.2",
+     "YPPASS": "11.4"
+    },
+    "rushing": {
+     "CAR": "39",
+     "RUSHINGLONG": "20",
+     "RUSHINGTDS": "3",
+     "RUSHINGYDS": "159",
+     "YPRUSH": "4.1"
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "11",
+   "first": "Tristan",
+   "last": "Bancroft",
+   "active": true,
+   "pos": "WR/LB",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'11\"",
+   "wgt": "200",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "3.5",
+     "SOLO": "27",
+     "TFL": "4.5",
+     "TOT": "36.5"
+    }
+   }
+  },
+  {
+   "jersey": "13",
+   "first": "Xavier",
+   "last": "Hale",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'9\"",
+   "wgt": "160",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "9",
+     "RUSHINGLONG": "17",
+     "RUSHINGTDS": "2",
+     "RUSHINGYDS": "76",
+     "YPRUSH": "8.4"
+    },
+    "receiving": {
+     "REC": "14",
+     "RECLONG": "52",
+     "RECTDS": "2",
+     "RECYDS": "146",
+     "YPREC": "10.4"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "23",
+     "TFL": "",
+     "TOT": "29.0"
+    }
+   }
+  },
+  {
+   "jersey": "15",
+   "first": "Lukas",
+   "last": "Stroud",
+   "active": true,
+   "pos": "K",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'0\"",
+   "wgt": "165",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "20",
+   "first": "Elijah",
+   "last": "Prescott",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "5'11\"",
+   "wgt": "200",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "124",
+     "RUSHINGLONG": "47",
+     "RUSHINGTDS": "12",
+     "RUSHINGYDS": "633",
+     "YPRUSH": "5.1"
+    },
+    "receiving": {
+     "REC": "14",
+     "RECLONG": "28",
+     "RECTDS": "2",
+     "RECYDS": "108",
+     "YPREC": "7.7"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "22",
+     "TFL": "2.5",
+     "TOT": "27.5"
+    }
+   }
+  },
+  {
+   "jersey": "21",
+   "first": "Sawyer",
+   "last": "Dunmore",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'1\"",
+   "wgt": "185",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "0.5",
+     "SOLO": "38",
+     "TFL": "5.5",
+     "TOT": "52.5"
+    }
+   }
+  },
+  {
+   "jersey": "22",
+   "first": "Kade",
+   "last": "Hollis",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "5'10\"",
+   "wgt": "210",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "2.0",
+     "SOLO": "30",
+     "TFL": "6.5",
+     "TOT": "44.0"
+    }
+   }
+  },
+  {
+   "jersey": "24",
+   "first": "Emmett",
+   "last": "Pelletier",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'9\"",
+   "wgt": "170",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "15",
+     "TFL": "0.5",
+     "TOT": "21.0"
+    }
+   }
+  },
+  {
+   "jersey": "25",
+   "first": "Bryce",
+   "last": "Norwood",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "SO",
+   "hgt": "6'0\"",
+   "wgt": "205",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "22",
+     "RUSHINGLONG": "18",
+     "RUSHINGTDS": "2",
+     "RUSHINGYDS": "81",
+     "YPRUSH": "3.7"
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "2.0",
+     "SOLO": "28",
+     "TFL": "6.5",
+     "TOT": "40.0"
+    }
+   }
+  },
+  {
+   "jersey": "32",
+   "first": "Jaxon",
+   "last": "Corwin",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "5'11\"",
+   "wgt": "190",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "3.5",
+     "SOLO": "31",
+     "TFL": "8.0",
+     "TOT": "38.0"
+    }
+   }
+  },
+  {
+   "jersey": "34",
+   "first": "Kai",
+   "last": "Calloway",
+   "active": true,
+   "pos": "RB/LB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'9\"",
+   "wgt": "205",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "1.0",
+     "SOLO": "36",
+     "TFL": "5.5",
+     "TOT": "47.0"
+    }
+   }
+  },
+  {
+   "jersey": "40",
+   "first": "Brody",
+   "last": "Thorne",
+   "active": true,
+   "pos": "WR/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'3\"",
+   "wgt": "230",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "1.0",
+     "SOLO": "23",
+     "TFL": "8.5",
+     "TOT": "30.5"
+    }
+   }
+  },
+  {
+   "jersey": "44",
+   "first": "Kade",
+   "last": "Farrow",
+   "active": true,
+   "pos": "WR/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'0\"",
+   "wgt": "215",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "4.5",
+     "SOLO": "11",
+     "TFL": "10.0",
+     "TOT": "15.0"
+    }
+   }
+  },
+  {
+   "jersey": "50",
+   "first": "Isaiah",
+   "last": "Rourke",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'0\"",
+   "wgt": "255",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "3.5",
+     "SOLO": "10",
+     "TFL": "5.5",
+     "TOT": "14.5"
+    }
+   }
+  },
+  {
+   "jersey": "52",
+   "first": "Isaiah",
+   "last": "Lockhart",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'11\"",
+   "wgt": "265",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "54",
+   "first": "Tyrese",
+   "last": "Marlow",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'1\"",
+   "wgt": "220",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "2.0",
+     "SOLO": "9",
+     "TFL": "3.0",
+     "TOT": "18.5"
+    }
+   }
+  },
+  {
+   "jersey": "55",
+   "first": "Kellen",
+   "last": "Sorensen",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'4\"",
+   "wgt": "270",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "58",
+   "first": "Carter",
+   "last": "Garrity",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'2\"",
+   "wgt": "240",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "4.5",
+     "SOLO": "17",
+     "TFL": "7.5",
+     "TOT": "23.5"
+    }
+   }
+  },
+  {
+   "jersey": "60",
+   "first": "Grady",
+   "last": "Easley",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'1\"",
+   "wgt": "260",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "62",
+   "first": "Kellen",
+   "last": "Castellano",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'4\"",
+   "wgt": "230",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "64",
+   "first": "Hudson",
+   "last": "Galloway",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'1\"",
+   "wgt": "240",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "66",
+   "first": "Declan",
+   "last": "Pruitt",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'10\"",
+   "wgt": "235",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "6.0",
+     "SOLO": "8",
+     "TFL": "7.5",
+     "TOT": "17.5"
+    }
+   }
+  },
+  {
+   "jersey": "70",
+   "first": "Dawson",
+   "last": "Varga",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "5'11\"",
+   "wgt": "285",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "72",
+   "first": "Bennett",
+   "last": "Wexler",
+   "active": true,
+   "pos": "OL",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "5'11\"",
+   "wgt": "265",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "75",
+   "first": "Dominic",
+   "last": "Albrecht",
+   "active": true,
+   "pos": "OL/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "6'1\"",
+   "wgt": "195",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "6.0",
+     "SOLO": "23",
+     "TFL": "9.5",
+     "TOT": "30.5"
+    }
+   }
+  },
+  {
+   "jersey": "80",
+   "first": "Lukas",
+   "last": "Quarles",
+   "active": true,
+   "pos": "WR",
+   "pos2": "",
+   "grade": "JR",
+   "hgt": "6'2\"",
+   "wgt": "210",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "16",
+     "RECLONG": "31",
+     "RECTDS": "2",
+     "RECYDS": "150",
+     "YPREC": "9.4"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "",
+     "TFL": "",
+     "TOT": ""
+    }
+   }
+  },
+  {
+   "jersey": "83",
+   "first": "Wyatt",
+   "last": "Kessler",
+   "active": true,
+   "pos": "WR/DB",
+   "pos2": "",
+   "grade": "FR",
+   "hgt": "5'10\"",
+   "wgt": "165",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "13",
+     "RECLONG": "34",
+     "RECTDS": "2",
+     "RECYDS": "194",
+     "YPREC": "14.9"
+    },
+    "defense": {
+     "SACKS": "",
+     "SOLO": "24",
+     "TFL": "2.0",
+     "TOT": "28.0"
+    }
+   }
+  },
+  {
+   "jersey": "88",
+   "first": "Sawyer",
+   "last": "Tinsley",
+   "active": true,
+   "pos": "WR/DL",
+   "pos2": "",
+   "grade": "SR",
+   "hgt": "5'10\"",
+   "wgt": "225",
+   "season": {
+    "passing": {
+     "CATT": "",
+     "INT": "",
+     "PASSINGTDS": "",
+     "PASSINGYDS": "",
+     "PCT": "",
+     "RTG": "",
+     "YPPASS": ""
+    },
+    "rushing": {
+     "CAR": "",
+     "RUSHINGLONG": "",
+     "RUSHINGTDS": "",
+     "RUSHINGYDS": "",
+     "YPRUSH": ""
+    },
+    "receiving": {
+     "REC": "",
+     "RECLONG": "",
+     "RECTDS": "",
+     "RECYDS": "",
+     "YPREC": ""
+    },
+    "defense": {
+     "SACKS": "1.0",
+     "SOLO": "21",
+     "TFL": "5.0",
+     "TOT": "27.0"
+    }
+   }
+  }
+ ],
+ "source": "SAMPLE",
+ "updated": 0,
+ "sample": true
+}

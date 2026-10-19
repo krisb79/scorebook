@@ -458,7 +458,8 @@ var App = (function () {
     }
 
     function openDefault() {
-        var fx = fixtures(), real = fx.filter(function (f) { return /^real_/.test(f.name); })[0] || fx[0];
+        // the demo game (made-up teams, players and times) first, else the real one
+        var fx = fixtures(), real = fx.filter(function (f) { return /^demo_/.test(f.name); })[0] || fx.filter(function (f) { return /^real_/.test(f.name); })[0] || fx[0];
         if (!real || !loadFixture(real.name)) { load({ id: null, name: "", setup: {}, ops: [], ready: null, fixture: "" }); }
     }
 
