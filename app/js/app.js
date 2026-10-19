@@ -481,10 +481,26 @@ var App = (function () {
         return Promise.resolve();
     }
 
+    // The demo teams (made up: Nova Ridge at Wardiff; rosters and colours from the team list or the online copy's
+    // sample teams). A new device starts a fresh game of them: no score, no drives, the opening kickoff next.
+    function demoSetup() {
+        return { date: new Date().toISOString().slice(0, 10), away: { code: "NRH", name: "Nova Ridge" }, home: { code: "WBW", name: "Wardiff" },
+            detail: "PLAYERS", rules: { quarterMinutes: 12, touchbackSpot: 20 } };
+    }
     function openDefault() {
-        // the demo game (made-up teams, players and times) first, else the real one
-        var fx = fixtures(), real = fx.filter(function (f) { return /^demo_/.test(f.name); })[0] || fx.filter(function (f) { return /^real_/.test(f.name); })[0] || fx[0];
-        if (!real || !loadFixture(real.name)) { load({ id: null, name: "", setup: {}, ops: [], ready: null, fixture: "" }); }
+        load({ id: null, name: "Nova Ridge at Wardiff (demo)", setup: demoSetup(), ops: [], ready: null, fixture: "" });
+    }
+    // First time on this device (no saved games): a saved demo game to log into.
+    function firstRun() {
+        if (!Store.ok) { return null; }
+        return Store.listGames().then(function (saved) {
+            var g;
+            if (saved.length) { return null; }
+            g = startSaved("Demo - Nova Ridge at Wardiff", demoSetup(), []);
+            addOption(g);
+            load(g);
+            return g.ready.then(function () { return Store.setCurrent(keyOf(g)); }).then(fillSources);
+        }).catch(function () { return null; });
     }
 
     function choose(key) {
@@ -667,7 +683,7 @@ var App = (function () {
         }).then(function () {
             return Store.ok ? Store.getCurrent().catch(function () { return null; }) : null;
         }).then(function (key) {
-            return key ? openKey(key) : null;
+            return key ? openKey(key) : firstRun();
         }).then(function () {
             if (!Store.ok) { setSave("bad", Store.error); }
             Sync.start();

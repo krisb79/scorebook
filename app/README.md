@@ -30,6 +30,12 @@ the public repo krisb79/scorebook, hosted at https://krisb79.github.io/scorebook
 go to the Google Sheet (the `?sync=` link), rosters come from the sheet or are added on the PLAYERS tab (kept on that
 device). Run the script again after a change to update it.
 
+## First time on a device
+
+With no saved games yet, the app starts a fresh saved game **Demo - Nova Ridge at Wardiff** (the made-up demo teams,
+their rosters and colours): no score, no drives, the opening kickoff next. The finished demo game
+(demo_nova_ridge_at_wardiff) stays in the game list with the test games.
+
 ## Open it
 
 - **With syncing (normal):** from the repo root run `python stats/server/standin.py`, then open
