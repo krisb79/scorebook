@@ -523,7 +523,13 @@ var App = (function () {
             try { localStorage.setItem("statsapp.tab", tab); } catch (e) { /* private mode */ }
         }
         $("mainTabs").addEventListener("click", function (e) { var b = e.target.closest("[data-tab]"); if (b) { show(b.getAttribute("data-tab")); drawer(false); } });
-        Teams.on(function () { if (cur === "players" && frame.contentWindow && frame.contentWindow.refresh) { frame.contentWindow.refresh(); } });
+        // a roster that arrives (or changes) redraws the page: names on the drive log tags and the stats
+        var redraw = 0;
+        Teams.on(function () {
+            if (cur === "players" && frame.contentWindow && frame.contentWindow.refresh) { frame.contentWindow.refresh(); }
+            clearTimeout(redraw);
+            redraw = setTimeout(function () { if (result) { refresh(); } }, 50);
+        });
         try { if (localStorage.getItem("statsapp.tab") === "players") { show("players"); } } catch (e) { /* private mode */ }
     }
 
