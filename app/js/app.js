@@ -177,10 +177,34 @@ var App = (function () {
 
     // ------------------------------------------------------------ render
 
+    // The teams' own colours (the team list: PLAYBOOK's team files, or the online demo teams) instead of the
+    // default blue / red, with black or white text on each, whichever reads.
+    var painted = "";
+    function teamColors(codes) {
+        var css = document.documentElement.style, key = "", parts = {};
+        ["AWAY", "HOME"].forEach(function (side) {
+            var t = typeof Teams !== "undefined" && codes ? Teams.get(codes[side]) : null, c = t && t.color ? String(t.color).trim() : "";
+            if (/^[0-9a-f]{6}$/i.test(c)) { c = "#" + c; }
+            parts[side] = /^#[0-9a-f]{6}$/i.test(c) ? c : "";
+            key += parts[side] + "|";
+        });
+        if (key === painted) { return; }
+        painted = key;
+        ["AWAY", "HOME"].forEach(function (side) {
+            var v = side === "AWAY" ? "--away" : "--home", c = parts[side], n, lum;
+            if (!c) { css.removeProperty(v); css.removeProperty(v + "-ink"); return; }
+            n = parseInt(c.slice(1), 16);
+            lum = ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
+            css.setProperty(v, c);
+            css.setProperty(v + "-ink", lum > 150 ? "#0b1017" : "#ffffff");
+        });
+    }
+
     function refresh() {
         var t0 = performance.now(), t1, t2, ops = game.ops.length === ui.upTo ? game.ops : game.ops.slice(0, ui.upTo);
         events = StatsOps.effective(ops);
         result = StatsEngine.replay(game.setup || {}, events);
+        teamColors(result.codes);
         t1 = performance.now();
         View.render(result, ui, Entry.fieldSituation(), events);
         Entry.render();

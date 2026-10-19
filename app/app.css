@@ -6,6 +6,7 @@
   --good: #1b7f3b; --bad: #b3261e;
   --grass: #3d8b40; --grass-line: rgba(255,255,255,.85); --grass-tick: rgba(255,255,255,.55);
   --strip-bg: #141a21; --strip-fg: #ffffff; --strip-muted: #a9b4c0;
+  --away-ink: #ffffff; --home-ink: #ffffff;    /* text on the team colours (app.js sets them with the teams' colours) */
   --r: 10px;
   color-scheme: light;
 }
@@ -46,8 +47,8 @@ button { font: inherit; color: inherit; }
   padding: 6px 10px; border-radius: 12px; border: 2px solid transparent;
   transition: filter .15s, border-color .15s;
 }
-.sb.away { background: linear-gradient(135deg, var(--away), color-mix(in srgb, var(--away) 55%, #000)); }
-.sb.home { background: linear-gradient(225deg, var(--home), color-mix(in srgb, var(--home) 55%, #000)); flex-direction: row-reverse; }
+.sb.away { background: linear-gradient(135deg, var(--away), color-mix(in srgb, var(--away) 75%, #000)); color: var(--away-ink); }
+.sb.home { background: linear-gradient(225deg, var(--home), color-mix(in srgb, var(--home) 75%, #000)); flex-direction: row-reverse; color: var(--home-ink); }
 .sb:not(.has) { filter: saturate(.5) brightness(.75); }
 .sb.has { border-color: #fff; }
 .sb .info { display: flex; flex-direction: column; gap: 5px; min-width: 0; cursor: pointer; }
@@ -56,10 +57,10 @@ button { font: inherit; color: inherit; }
 .sb .tor { display: flex; align-items: center; gap: 8px; }
 .sb.home .tor { flex-direction: row-reverse; }
 .sb .dots { display: flex; gap: 4px; }
-.sb .dot { width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 2px solid #fff; cursor: pointer; }
+.sb .dot { width: 13px; height: 13px; border-radius: 50%; background: currentColor; border: 2px solid currentColor; cursor: pointer; }
 .sb .dot.used { background: transparent; opacity: .6; }
-.sb .bt { font-size: .7em; font-weight: 800; padding: 2px 7px; border-radius: 6px; border: 1.5px dashed rgba(255,255,255,.45); color: rgba(255,255,255,.55); white-space: nowrap; }
-.sb.has .bt { background: #fff; color: #141a21; border: 1.5px solid #fff; }
+.sb .bt { font-size: .7em; font-weight: 800; padding: 2px 7px; border-radius: 6px; border: 1.5px dashed currentColor; opacity: .55; white-space: nowrap; }
+.sb.has .bt { background: #fff; color: #141a21; border: 1.5px solid #fff; opacity: 1; }
 .sb .sc {
   font-size: 2em; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums;
   background: rgba(0,0,0,.25); border: 0; border-radius: 8px; padding: 4px 10px; min-width: 2ch; cursor: pointer; color: #fff;
@@ -197,8 +198,8 @@ button { font: inherit; color: inherit; }
 .erow { display: flex; align-items: center; gap: 8px; }
 .erow .sp { flex: 1; }
 .seg.poss button { min-width: 72px; min-height: 44px; font-size: 15px; font-weight: 800; }
-.seg.poss button.away.on { background: var(--away); color: #fff; }
-.seg.poss button.home.on { background: var(--home); color: #fff; }
+.seg.poss button.away.on { background: var(--away); color: var(--away-ink); }
+.seg.poss button.home.on { background: var(--home); color: var(--home-ink); }
 .seg button:disabled, .types button:disabled, .tog:disabled, .btn:disabled, .stepper button:disabled { opacity: .35; cursor: default; }
 .btn.undo { font-weight: 800; }
 .emode {
@@ -343,8 +344,8 @@ body.dragging-play { user-select: none; -webkit-user-select: none; cursor: grabb
 .cardLbl .hint { text-transform: none; letter-spacing: 0; font-weight: 600; }
 .card button:not(.btn) { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; min-height: 46px; font-weight: 700; cursor: pointer; padding: 4px 8px; }
 .card button.on:not(.btn) { background: var(--fg); color: var(--panel); border-color: var(--fg); }
-.card button.away.on { background: var(--away); border-color: var(--away); color: #fff; }
-.card button.home.on { background: var(--home); border-color: var(--home); color: #fff; }
+.card button.away.on { background: var(--away); border-color: var(--away); color: var(--away-ink); }
+.card button.home.on { background: var(--home); border-color: var(--home); color: var(--home-ink); }
 .card button:active { filter: brightness(.88); }
 .card button.big { min-height: 54px; font-size: 16px; font-weight: 800; }
 .card button.primary { background: var(--good); border-color: var(--good); color: #fff; }
@@ -365,7 +366,7 @@ body.dragging-play { user-select: none; -webkit-user-select: none; cursor: grabb
 .field.has-home { outline-color: var(--home); }
 .field .ez { position: absolute; top: 0; bottom: 0; width: 6%; background: #14422a; display: grid; place-items: center; font-size: 12px; font-weight: 800; text-align: center; line-height: 1.1; }
 .field .ez.l { left: 0; } .field .ez.r { right: 0; }
-.field .ez.away { background: var(--away); } .field .ez.home { background: var(--home); }
+.field .ez.away { background: var(--away); color: var(--away-ink); } .field .ez.home { background: var(--home); color: var(--home-ink); }
 .field .ez.cut { font-size: 10px; color: rgba(255,255,255,.75); }
 .field .gl { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: rgba(255,255,255,.55); pointer-events: none; }
 .field .gl.five { background: rgba(255,255,255,.4); }
