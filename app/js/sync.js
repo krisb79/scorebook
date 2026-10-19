@@ -94,11 +94,24 @@ var Sync = (function () {
         });
     }
 
+    // The game's two teams for the sheet's Scorebook Teams tab: code, name, mascot, colours (the team list).
+    function teamsOf(setup) {
+        var out = {};
+        setup = setup || {};
+        ["AWAY", "HOME"].forEach(function (side) {
+            var su = (side === "AWAY" ? setup.away : setup.home) || {}, t = su.code && typeof Teams !== "undefined" ? Teams.get(su.code) : null;
+            out[side] = { code: su.code || "", name: (t && t.name && t.name !== su.code ? t.name : su.name) || "", mascot: (t && t.mascot) || "",
+                color: (t && t.color) || "", color2: (t && t.color2) || "" };
+        });
+        return out;
+    }
+
     function sendGame(id, ops) {
         var t0 = performance.now();
         return gameMeta(id).then(function (g) {
             var body = { game: g, ops: ops }, key = setting("statsapp.syncKey", "key");
             if (key) { body.key = key; }
+            body.teams = teamsOf(g.setup);
             return post(body);
         }).then(function (j) {
             if (!j || !j.ok || !j.acked) { throw new Error((j && j.error) || "Bad answer from the server"); }
