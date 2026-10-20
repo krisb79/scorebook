@@ -749,6 +749,9 @@ var Center = (function () {
             // on a drive log row: assign the player(s) to that play
             if (g.row) { clearPlay(); assignPlayers(g.row.getAttribute("data-ev"), g.slot ? g.slot.getAttribute("data-role") : null, g.j, g.rec); render(); Players.render(); return; }
             if (blocked()) { clearPlay(); refuse(blocked(), g.tok); render(); Players.render(); return; }
+            if (Players.side() !== Players.auto()) {             // the cards show the team without the ball
+                clearPlay(); refuse({ text: "The cards show " + team(Players.side()) + " - " + team(Players.auto()) + " has the ball (tap " + App.result.codes[Players.auto()] + " above the cards)" }, g.tok); render(); Players.render(); return;
+            }
             // on INCOMPLETE: an incomplete pass by that player (to the receiver it went through)
             if (g.inc) { PEND = { type: "PASS", qb: g.j, rec: g.rec, result: "INCOMPLETE" }; FIELD.spot = null; logPending(); return; }
             // letting go logs it, like the play buttons: on the field = a run / a completed pass to that spot,

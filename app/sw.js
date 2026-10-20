@@ -7,7 +7,7 @@
  * (/stats/op, /stats/ops, /stats/v) are never cached.
  * Service workers only run on https:// or localhost (a browser rule).
  */
-var CACHE = "statsapp-shell-39";
+var CACHE = "statsapp-shell-40";
 var SHELL = [
     "./", "index.html", "app.css",
     "js/store.js", "js/sync.js", "js/format.js", "js/keypad.js", "js/field.js", "js/view.js",

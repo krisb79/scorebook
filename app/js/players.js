@@ -145,11 +145,23 @@ var Players = (function () {
     }
     function saveSlots(side) { store("statsapp.slots." + codeOf(side), slots(side)); }
 
-    // The team the grid shows: the offense, else the open drive's team, else the next drive's.
-    function side() {
+    // The team the grid follows: the offense, else the open drive's team, else the next drive's.
+    function auto() {
         var res = App.result, sit = res.situation, ds = res.drives, ld = ds.length ? ds[ds.length - 1] : null;
         return sit.offense || (ld && ld.open ? ld.side : null) || Center.nextSide();
     }
+    // The team the grid shows: the AWAY / HOME toggle picks one; it goes back to following the ball
+    // when the ball changes hands.
+    var VIEW = null, VIEW_AT = null;
+    function side() {
+        var a = auto();
+        if (VIEW && VIEW_AT === a) { return VIEW; }
+        VIEW = null;
+        return a;
+    }
+    function show(sd) { var a = auto(); VIEW = sd === a ? null : sd; VIEW_AT = a; render(); }
+    // "Add another": after a jersey goes in a slot, the picker opens on the next empty slot (kept on this device)
+    var MORE = store("statsapp.addAnother") === true;
 
     // What each jersey did tonight: thrown / caught / carried -> the tile's coloured edge.
     function roles(sd) {
@@ -179,8 +191,11 @@ var Players = (function () {
             cls = "tok" + (r.length > 1 ? " mix" : (r.length ? " " + r[0] : "")) + (sel.indexOf(n) >= 0 ? " sel" : "");
             h += '<div class="' + cls + '" data-j="' + esc(n) + '" data-idx="' + i + '">' + esc(n) + '<small>' + esc(last(sd, n)) + '</small></div>';
         }
-        C.innerHTML = '<div class="plhead"><div class="cardLbl">PLAYERS - ' + esc(View.teamName(sd, App.result.codes)) +
-            ' <span class="hint">- drag onto the field = run, onto a player then the field = pass | hold a slot to set it</span></div>' +
+        C.innerHTML = '<div class="plhead"><div class="seg pltabs">' + ["AWAY", "HOME"].map(function (k) {
+                return '<button class="' + k.toLowerCase() + (k === sd ? ' on' : '') + '" data-plside="' + k + '" title="' + esc(View.teamName(k, App.result.codes)) + '">' + esc(codeOf(k)) + '</button>';
+            }).join("") + '</div><div class="cardLbl">PLAYERS - ' + esc(View.teamName(sd, App.result.codes)) +
+            (sd !== auto() ? ' <span class="hint off">- not the team with the ball: hold a slot to set it</span>' :
+            ' <span class="hint">- drag onto the field = run, onto a player then the field = pass | hold a slot to set it</span>') + '</div>' +
             '<button class="btn" data-arrange="1" title="Rows, columns and the order of the slots">ARRANGE</button></div>' +
             '<div id="plGrid" style="grid-template-columns:repeat(' + g.c + ',minmax(0,1fr))">' + h + '</div>';
     }
@@ -198,6 +213,11 @@ var Players = (function () {
             return '<div class="arrDims"><span class="k">ROWS</span><button class="btn" data-act="dim" data-v="r:-1">&minus;</button><b>' + g.r + '</b><button class="btn" data-act="dim" data-v="r:1">+</button>' +
                 '<span class="k">COLUMNS</span><button class="btn" data-act="dim" data-v="c:-1">&minus;</button><b>' + g.c + '</b><button class="btn" data-act="dim" data-v="c:1">+</button></div>' +
                 '<p class="muted">Drag a tile onto another spot to move it there - tap a tile to set or clear its player. The size is the same for both teams.</p>' +
+                (function () {
+                    var hid = slots(sd).slice(g.r * g.c).filter(function (x) { return x; });
+                    return hid.length ? '<p class="arrHid">' + hid.length + ' player' + (hid.length > 1 ? 's are' : ' is') + ' past the last tile (kept, not shown): ' +
+                        hid.map(function (n) { return '#' + esc(n); }).join(" ") + ' - add rows / columns to show them again</p>' : '';
+                }()) +
                 '<div id="arrGrid" style="grid-template-columns:repeat(' + g.c + ',minmax(0,1fr))">' + h + '</div>' +
                 '<div class="hrow end"><button class="btn big primary" data-act="close">DONE</button></div>';
         }
@@ -300,13 +320,17 @@ var Players = (function () {
     function editSlot(idx) {
         var sd = side(), s = slots(sd);
         picker(sd, {
-            title: "Player slot " + (idx + 1) + " - " + codeOf(sd), cur: s[idx], used: s, clearLabel: "Empty this slot",
+            title: "Player slot " + (idx + 1) + " - " + codeOf(sd), cur: s[idx], used: s, clearLabel: "Empty this slot", more: true,
             pick: function (v) {
-                var dup = v ? s.indexOf(v) : -1;
+                var dup = v ? s.indexOf(v) : -1, g = dims(), nx = -1, i;
                 if (dup >= 0 && dup !== idx) { s[dup] = ""; }
                 s[idx] = v;
                 saveSlots(sd);
                 render();
+                if (!v || !MORE) { return; }
+                for (i = 1; i < g.r * g.c && nx < 0; i++) { if (!s[(idx + i) % (g.r * g.c)]) { nx = (idx + i) % (g.r * g.c); } }
+                if (nx >= 0) { setTimeout(function () { editSlot(nx); }, 0); }
+                else { App.toast("Every " + codeOf(sd) + " slot is full", false); }
             }
         });
     }
@@ -437,7 +461,8 @@ var Players = (function () {
                         '<div class="pkflt" id="pkFlt">' + fltRow() + '</div>' +
                         '<div class="pklist" id="pkList">' + list() + '</div>' :
                         '<div class="pkkeys" id="pkKeys">' + keysHtml() + '</div>') +
-                    '<div class="hrow">' + (cur ? '<button class="btn clearbtn" id="pkClear" data-act="clear">' + esc(o.clearLabel || "Clear") + '</button>' : '') +
+                    '<div class="hrow">' + (o.more ? '<button class="btn tog' + (MORE ? ' on' : '') + '" data-act="more" title="After a pick, open the picker on the next empty slot">ADD ANOTHER: ' + (MORE ? 'ON' : 'OFF') + '</button>' : '') +
+                    (cur ? '<button class="btn clearbtn" id="pkClear" data-act="clear">' + esc(o.clearLabel || "Clear") + '</button>' : '') +
                     '<button class="btn" data-act="reload">Reload roster</button></div>';
             },
             input: function (k, v) { q = v; $("pkList").innerHTML = list(); },
@@ -445,6 +470,7 @@ var Players = (function () {
                 if (a === "pick") { pick(v); }
                 else if (a === "clear") { clearTap(); }
                 else if (a === "reload") { reload(); }
+                else if (a === "more") { MORE = !MORE; store("statsapp.addAnother", MORE); Huddles.refresh(); afterDraw(); }
                 else if (a === "flt") { flt = flt === v ? "" : v; $("pkFlt").innerHTML = fltRow(); $("pkList").innerHTML = list(); }
                 else if (a === "tab") {
                     tab = v;
@@ -463,7 +489,11 @@ var Players = (function () {
 
     function buzz(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms || 12); } catch (e) { /* not supported */ } } }
     function init() {
-        $("playersCard").addEventListener("click", function (e) { if (e.target.closest && e.target.closest("[data-arrange]")) { arrange(); } });
+        $("playersCard").addEventListener("click", function (e) {
+            var b = e.target.closest && e.target.closest("[data-plside]");
+            if (b) { show(b.getAttribute("data-plside")); return; }
+            if (e.target.closest && e.target.closest("[data-arrange]")) { arrange(); }
+        });
         if (typeof Teams !== "undefined") {
             Teams.on(function () {
                 if (!App.result) { return; }
@@ -473,5 +503,5 @@ var Players = (function () {
         }
     }
 
-    return { init: init, render: render, reload: reload, note: function (c) { return NOTE[c]; }, editSlot: editSlot, pickFor: pickFor, name: name, last: last, side: side, slots: slots };
+    return { init: init, render: render, reload: reload, note: function (c) { return NOTE[c]; }, editSlot: editSlot, pickFor: pickFor, name: name, last: last, side: side, auto: auto, slots: slots };
 })();
