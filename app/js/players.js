@@ -427,7 +427,19 @@ var Players = (function () {
             else if (e.key === " " && K.mode === "name") { e.preventDefault(); kKey("SPACE"); }
         }
         document.addEventListener("keydown", onKey);
+        function clearHold() {
+            var b = $("pkClear");
+            if (!b || b.getAttribute("data-hold")) { return; }
+            b.setAttribute("data-hold", "1");
+            b.addEventListener("pointerdown", function () {
+                clearTimeout(holdT);
+                b.classList.add("holding");
+                holdT = setTimeout(function () { held = true; clearTimeout(armT); armT = 0; buzz(30); pick(""); }, 600);
+            });
+            ["pointerup", "pointerleave", "pointercancel"].forEach(function (t) { b.addEventListener(t, function () { clearTimeout(holdT); b.classList.remove("holding"); }); });
+        }
         function afterDraw() {
+            clearHold();
             setTimeout(function () {
                 var inp = $("pkIn");
                 if (!inp || tab !== "list") { return; }
@@ -441,10 +453,11 @@ var Players = (function () {
                 });
             }, 30);
         }
-        // CLEAR / EMPTY THIS SLOT: the first tap arms it, a second tap (within 3 s) clears
-        var armT = 0;
+        // CLEAR / EMPTY THIS SLOT: the first tap arms it, a second tap (within 3 s) clears; holding it clears too
+        var armT = 0, holdT = 0, held = false;
         function clearTap() {
             var b = $("pkClear");
+            if (held) { held = false; return; }
             if (armT) { clearTimeout(armT); armT = 0; pick(""); return; }
             if (!b) { return; }
             b.classList.add("arm"); b.textContent = "TAP AGAIN TO CLEAR";
@@ -452,6 +465,8 @@ var Players = (function () {
         }
         pickerList = list;
         Huddles.custom(o.title, {
+            // CLEAR / EMPTY THIS SLOT up by Close: tap twice, or hold it
+            head: function () { return cur ? '<button class="btn clearbtn" id="pkClear" data-act="clear" title="Tap twice, or hold">' + esc(o.clearLabel || "Clear") + '</button>' : ''; },
             render: function () {
                 return '<div class="pktabs"><button data-act="tab" data-v="list"' + (tab === "list" ? ' class="on"' : '') + '>LIST</button>' +
                     '<button data-act="tab" data-v="keys"' + (tab === "keys" ? ' class="on"' : '') + '>KEYPAD</button></div>' +
@@ -462,7 +477,7 @@ var Players = (function () {
                         '<div class="pklist" id="pkList">' + list() + '</div>' :
                         '<div class="pkkeys" id="pkKeys">' + keysHtml() + '</div>') +
                     '<div class="hrow">' + (o.more ? '<button class="btn tog' + (MORE ? ' on' : '') + '" data-act="more" title="After a pick, open the picker on the next empty slot">ADD ANOTHER: ' + (MORE ? 'ON' : 'OFF') + '</button>' : '') +
-                    (cur ? '<button class="btn clearbtn" id="pkClear" data-act="clear">' + esc(o.clearLabel || "Clear") + '</button>' : '') +
+
                     '<button class="btn" data-act="reload">Reload roster</button></div>';
             },
             input: function (k, v) { q = v; $("pkList").innerHTML = list(); },

@@ -46,6 +46,8 @@ var Keypad = (function () {
                 return '<button data-k="' + k + '">' + (k === "DEL" ? "&#9003;" : k) + '</button>'; }).join("") + '</div>' +
                 '<div class="kprow" style="grid-template-columns:1fr 2fr"><button data-k="CANCEL">CANCEL</button><button class="ok" data-k="OK">OK</button></div>';
         }
+        // CLEAR takes two taps: armed, it says AGAIN (red)
+        if (st.arm) { h = h.split('data-k="CLEAR">CLEAR<').join('data-k="CLEAR" class="arm">AGAIN<'); }
         $("kpBody").innerHTML = h;
     }
 
@@ -58,9 +60,11 @@ var Keypad = (function () {
         }
         if (k === "CANCEL") { close(); if (o.cancel) { o.cancel(); } return; }
         // the value it opened with shows until the first new digit / letter, which starts over
+        if (k === "CLEAR" && !st.arm) { st.arm = true; draw(); return; }
+        if (k !== "CLEAR") { st.arm = false; }
         if (st.fresh && k !== "DEL" && k !== "CLEAR") { st.v = ""; }
         st.fresh = false;
-        if (k === "CLEAR") { st.v = ""; }
+        if (k === "CLEAR") { st.v = ""; st.arm = false; }
         else if (k === "DEL") { st.v = st.v.slice(0, -1); }
         else if (o.mode === "text") { if (st.v.length < max) { st.v += k; } }
         else if (/^\d$/.test(k) && st.v.length < max) { st.v += k; }

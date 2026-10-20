@@ -737,3 +737,15 @@ dialog.kpad:not([open]) { display: none; }
 .stathead { display: flex; align-items: center; gap: 6px; margin: 8px; }
 .stathead .stattabs { flex: 1; margin: 0; }
 .arrHid { color: var(--bad); font-weight: 700; margin: 4px 0; }
+.hextra { margin-left: auto; margin-right: 8px; display: flex; gap: 8px; }
+.hextra:empty { display: none; }
+.btn.clearbtn.holding { background: var(--bad); border-color: var(--bad); color: #fff; transition: background .6s; }
+.kprow button.arm { background: var(--bad); border-color: var(--bad); color: #fff; font-weight: 900; }
+.mbtns { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mbtns .btn { min-height: 40px; font-weight: 800; font-size: 12px; }
+.fieldwrap { position: relative; }
+.fieldStart { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 6; min-height: 40px; padding: 0 22px; border-radius: 10px;
+  border: 2px solid #fff; background: var(--los); color: #fff; font-weight: 900; font-size: 14px; letter-spacing: .04em; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+.fieldStart[hidden] { display: none; }
+.pslot { min-width: 4em; padding: 5px 10px; font-size: 12px; min-height: 28px; line-height: 1.4; }
+.fieldStart.away { background: var(--away); color: var(--away-ink); } .fieldStart.home { background: var(--home); color: var(--home-ink); }

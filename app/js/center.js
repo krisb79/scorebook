@@ -657,6 +657,12 @@ var Center = (function () {
         $("arc").innerHTML = h;
     }
 
+    var REC_PAUSE = 300;   // ms a dragged card rests on another card to make it the receiver
+    function pendFrom(g) {
+        if (g.mode === "INT") { PEND = { type: "PASS", qb: g.j, rec: g.rec, result: "INTERCEPTION" }; }
+        else if (g.mode === "FUM") { PEND = g.rec ? { type: "PASS", qb: g.j, rec: g.rec, result: "FUMBLE_LOST" } : { type: "RUSH", car: g.j, result: "FUMBLE_LOST" }; }
+        else { PEND = g.rec ? { type: "PASS", qb: g.j, rec: g.rec, result: "COMPLETE" } : { type: "RUSH", car: g.j, result: "DOWN" }; }
+    }
     function bindPlayers() {
         var card = $("playersCard"), chip = $("dragChip");
         card.addEventListener("contextmenu", function (e) { if (e.target.closest(".tok")) { e.preventDefault(); } });
@@ -665,7 +671,7 @@ var Center = (function () {
             if (!t || !App.result || App.isViewing()) { return; }
             e.preventDefault();
             pdrag = held = { tok: t, j: t.getAttribute("data-j"), idx: +t.getAttribute("data-idx"), x: e.clientX, y: e.clientY, id: e.pointerId,
-                moving: false, rec: null, hold: false };
+                moving: false, rec: null, hold: false, cand: null, candT: 0, lx: e.clientX, ly: e.clientY };
             held.timer = setTimeout(function () {
                 if (pdrag === held && !held.moving) { held.hold = true; t.classList.add("holdready"); buzz(30); }
             }, 550);
@@ -692,15 +698,37 @@ var Center = (function () {
             under = document.elementFromPoint(e.clientX, e.clientY);
             over = under && under.closest && under.closest("#plGrid .tok");
             Array.prototype.forEach.call($("plGrid").querySelectorAll(".tok.hover"), function (x) { x.classList.remove("hover"); });
-            // over another player = a pass to them; the last one stays the target on the way to the field
+            // over another player = a pass to them, once the drag rests on the card a moment (REC_PAUSE): just
+            // passing over a card changes nothing; the last one chosen stays the target on the way to the field
             if (over && over !== g.tok && over.getAttribute("data-j")) {
-                if (g.rec !== over.getAttribute("data-j")) { buzz(6); }
-                g.rec = over.getAttribute("data-j");
                 over.classList.add("hover");
-            }
+                if (g.cand !== over.getAttribute("data-j") && g.rec !== over.getAttribute("data-j")) {
+                    g.cand = over.getAttribute("data-j");
+                    clearTimeout(g.candT);
+                    g.candT = setTimeout(function () {
+                        if (pdrag !== g || !g.cand) { return; }
+                        g.rec = g.cand; g.cand = null; buzz(12);
+                        pendFrom(g);
+                        chip.textContent = pName(g.j) + " > " + pLast(g.rec) + (g.mode ? "  -  " + (g.mode === "FUM" ? "FUMBLE" : "INTERCEPTION") : "");
+                        playerArc(g.lx, g.ly);
+                    }, REC_PAUSE);
+                }
+            } else if (g.cand) { g.cand = null; clearTimeout(g.candT); }
             // through a play button: FUMBLE / INTERCEPTION stay on for the rest of the drag (then the field);
-            // INCOMPLETE logs when you let go on it
+            // INCOMPLETE logs when you let go on it. A fast swipe can skip the button between two moves, so
+            // the path since the last move is checked too.
             btn = under && under.closest && under.closest("#playBtns [data-play]");
+            if (!btn || (btn.getAttribute("data-play") !== "FUM" && btn.getAttribute("data-play") !== "INT")) {
+                (function () {
+                    var k, n = Math.ceil(Math.hypot(e.clientX - g.lx, e.clientY - g.ly) / 6), el, b2;
+                    for (k = 1; k < n; k++) {
+                        el = document.elementFromPoint(g.lx + (e.clientX - g.lx) * k / n, g.ly + (e.clientY - g.ly) * k / n);
+                        b2 = el && el.closest && el.closest("#playBtns [data-play]");
+                        if (b2 && (b2.getAttribute("data-play") === "FUM" || b2.getAttribute("data-play") === "INT")) { btn = b2; if (g.mode !== b2.getAttribute("data-play")) { break; } }
+                    }
+                }());
+            }
+            g.lx = e.clientX; g.ly = e.clientY;
             Array.prototype.forEach.call(document.querySelectorAll("#playBtns .pdrop, #listBody .pdrop"), function (x) { x.classList.remove("pdrop"); });
             g.inc = !!(btn && btn.getAttribute("data-play") === "INC");
             if (btn && (btn.getAttribute("data-play") === "FUM" || btn.getAttribute("data-play") === "INT") && g.mode !== btn.getAttribute("data-play")) {
@@ -712,9 +740,7 @@ var Center = (function () {
             g.row = under && under.closest && under.closest("#listBody .play[data-ev]");
             g.slot = under && under.closest && under.closest("#listBody .pslot");
             if (g.row && g.row.querySelector(".pslot")) { (g.slot || g.row).classList.add("pdrop"); } else { g.row = null; g.slot = null; }
-            if (g.mode === "INT") { PEND = { type: "PASS", qb: g.j, rec: g.rec, result: "INTERCEPTION" }; }
-            else if (g.mode === "FUM") { PEND = g.rec ? { type: "PASS", qb: g.j, rec: g.rec, result: "FUMBLE_LOST" } : { type: "RUSH", car: g.j, result: "FUMBLE_LOST" }; }
-            else { PEND = g.rec ? { type: "PASS", qb: g.j, rec: g.rec, result: "COMPLETE" } : { type: "RUSH", car: g.j, result: "DOWN" }; }
+            pendFrom(g);
             playerArc(e.clientX, e.clientY);
             if (overField(e)) {
                 s = snap(Field.spotAt(REF, e.clientX));
@@ -733,7 +759,7 @@ var Center = (function () {
             var g = pdrag;
             if (!g || e.pointerId !== g.id) { return; }
             pdrag = null;
-            clearTimeout(g.timer);
+            clearTimeout(g.timer); clearTimeout(g.candT);
             g.tok.classList.remove("holdready");
             chip.hidden = true;
             $("arc").innerHTML = "";
@@ -756,10 +782,10 @@ var Center = (function () {
             if (g.inc) { PEND = { type: "PASS", qb: g.j, rec: g.rec, result: "INCOMPLETE" }; FIELD.spot = null; logPending(); return; }
             // letting go logs it, like the play buttons: on the field = a run / a completed pass to that spot,
             // or the fumble / interception it went through, at that spot;
-            // on (or after) a receiver but off the field = an incomplete pass to them
+            // let go anywhere else = cancelled, nothing logged (an incomplete pass: let go on INCOMPLETE)
             if (overField(e)) { FIELD.spot = snap(Field.spotAt(REF, e.clientX)).c; logPending(); return; }
-            if (g.mode) { clearPlay(); App.toast("Drag on down to the field: where the " + (g.mode === "FUM" ? "fumble was lost" : "interception was made"), false); render(); Players.render(); return; }
-            if (g.rec) { PEND = { type: "PASS", qb: g.j, rec: g.rec, result: "INCOMPLETE" }; FIELD.spot = null; logPending(); return; }
+            if (g.mode) { clearPlay(); App.toast("Cancelled - drag on down to the field: where the " + (g.mode === "FUM" ? "fumble was lost" : "interception was made"), false); render(); Players.render(); return; }
+            if (g.rec) { clearPlay(); App.toast("Cancelled - let go on the field (a catch) or on INCOMPLETE", false); render(); Players.render(); return; }
             clearPlay();                                        // a run let go off the field: nothing
             render();
             Players.render();
@@ -1498,6 +1524,8 @@ var Center = (function () {
         texts();
         renderDrive();
         renderChart();
+        var sb = $("startBtn"), fs = $("fieldStart");
+        if (fs) { fs.hidden = !sb; if (sb) { fs.textContent = sb.textContent; fs.className = "fieldStart " + nextSide().toLowerCase(); } }
     }
 
     function init() {
@@ -1506,6 +1534,7 @@ var Center = (function () {
         bindPlays();
         bindPlayers();
         bindTimePicker();
+        $("fieldStart").addEventListener("click", function () { var sb = $("startBtn"); if (sb) { sb.click(); } });
         // re-fit the drive chart when its column changes size (window, menu, player tracking on / off)
         if (typeof ResizeObserver !== "undefined") {
             new ResizeObserver(function () { if (REF && App.result) { renderChart(); } }).observe($("chartCard").parentElement);
@@ -1524,7 +1553,8 @@ var Center = (function () {
     return { init: init, render: render, paint: function () { if (REF && App.result) { paint(); } }, possession: possession,
         ddEdit: function () {
             if (mode() === "play" && live().offense && !Entry.active() && !App.isViewing()) { ddHuddle("DD", null); }
-            else { App.toast(App.isViewing() ? "Viewing an earlier point: tap Go live first" : "The down & distance can be changed during a drive", false); }
+            else if (App.isViewing()) { App.toast("Viewing an earlier point: tap Go live first", false); }
+            else { refuse({ text: "No drive yet: the down & distance can be changed during a drive - START one first", el: $("startBtn") }, $("fieldStart").hidden ? $("situW") : $("fieldStart")); }
         },
         nextSide: nextSide, pending: function () { return PEND; }, setPending: setPending, pickSlot: pickSlot };
 })();

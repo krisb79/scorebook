@@ -238,7 +238,7 @@ var Entry = (function () {
         if (!App.commit(op, saved.mode.kind)) {           // refused (double tap / viewing): keep what was typed
             s = saved.s; mode = saved.mode; $("enClock").value = saved.clock;
             render();
-        }
+        } else if (App.closeMenu) { App.closeMenu(); }      // logged from the menu's MORE: back to the field
     }
 
     // ------------------------------------------------------------ edit / insert

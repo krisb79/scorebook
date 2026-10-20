@@ -45,7 +45,9 @@
       </div>
       <div class="playnow" id="playNow" hidden>-</div>
       <!-- AWAY goal line on the left, AWAY going left to right (FLIP turns it round) -->
-      <div id="field" class="field" role="img" aria-label="Field"></div>
+      <div class="fieldwrap"><div id="field" class="field" role="img" aria-label="Field"></div>
+        <!-- no drive open: START <team> DRIVE on the field too (the same as the drive card's button) -->
+        <button id="fieldStart" class="fieldStart" hidden></button></div>
       <div class="yrow">
         <button class="btn" id="ym" aria-label="One yard less">-1</button>
         <div class="yscrub" id="yScrub"><span>-</span><small></small></div>
@@ -87,7 +89,8 @@
 <!-- the menu (the strip's menu button): the pages (LOG | PLAYERS), GAME and the older entry panel -->
 <div class="scrim" id="drawerScrim" hidden></div>
 <aside class="drawer" id="drawer" aria-label="Menu">
-  <div class="dhd"><b>MENU</b><button class="btn" id="drawerGame">GAME: period, timeouts, score, new game</button><button class="btn" id="drawerTest" title="The full game test as a checklist, in a narrow window next to the app">TEST RUN</button><button class="btn" id="drawerClose" aria-label="Close the menu">&#10005;</button></div>
+  <div class="dhd"><b>MENU</b><button class="btn" id="drawerClose" aria-label="Close the menu">&#10005;</button></div>
+  <div class="themeRow"><span class="k">GAME</span><div class="mbtns"><button class="btn" id="drawerNew">NEW GAME</button><button class="btn" id="drawerGame" title="Period, timeouts, score fix, clock, export">PERIOD, TIMEOUTS, SCORE</button><button class="btn" id="drawerTest" title="The full game test as a checklist, in a narrow window next to the app">TEST RUN</button></div></div>
   <div class="themeRow"><span class="k">PLAYER TRACKING</span><div class="seg" id="trackSeg" style="grid-template-columns:repeat(2,1fr)"><button data-track="on">ON</button><button data-track="off">OFF - TEAM STATS ONLY</button></div></div>
   <div class="themeRow"><span class="k">THEME</span><div class="seg" id="themeSeg"><button data-theme="auto">AUTO</button><button data-theme="light">LIGHT</button><button data-theme="dark">DARK</button></div></div>
   <!-- pages: LOG (the field, drives, plays) | PLAYERS (the team list: add / edit players, season stats) -->
@@ -126,7 +129,7 @@
 <dialog class="kpad" id="kpad"><div id="kpBody"></div></dialog>
 
 <dialog class="huddle" id="huddle">
-  <div class="hhead"><h2 id="hTitle"></h2><button class="btn" data-act="close">Close</button></div>
+  <div class="hhead"><h2 id="hTitle"></h2><span class="hextra" id="hExtra"></span><button class="btn" data-act="close">Close</button></div>
   <div class="hbody" id="hBody"></div>
   <div class="hmsg" id="hMsg" role="status"></div>
 </dialog>

@@ -21,10 +21,12 @@ var Huddles = (function () {
         var c = current;
         current = null;
         if ($("huddle").open) { $("huddle").close(); }
+        $("hExtra").innerHTML = "";
         if (c && c.onClose) { c.onClose(); }
     }
     function draw() {
-        if (current) { $("hBody").innerHTML = current.render(); }
+        // head (optional): buttons next to Close
+        if (current) { $("hBody").innerHTML = current.render(); $("hExtra").innerHTML = current.head ? current.head() : ""; }
     }
     function say(text, bad) {
         var m = $("hMsg");
