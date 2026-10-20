@@ -129,12 +129,13 @@ footer { padding: 10px 8px 40px; }
     TEST.sections.forEach(function (sec, si) {
       var text = [], ci = 0;
       if (si === 1 && /^Features/.test(sec.name)) { h += '<h2 class="part">Part 1 - Features</h2>'; }
-      if (sec.name === "1st quarter") { h += '<h2 class="part">Part 2 - The game</h2>'; }
+      if (sec.name === "Jersey cards") { h += '<h2 class="part">Part 2 - The game</h2>'; }
       h += "<h2>" + esc(sec.name.replace(/^Features: /, "")) + "</h2>";
       sec.items.forEach(function (it) {
         if (it.text !== undefined) { text.push(it.text); return; }
         h += textBlock(text); text = [];
-        if (it.feat) { h += card("f" + it.feat, "F" + it.feat + " - " + sec.name.replace(/^Features: /, ""), it.act, it.see, "feat"); }
+        if (it.jersey) { h += card("j" + it.jersey, "J" + it.jersey + " - Jersey cards", it.act, it.see, "feat"); }
+        else if (it.feat) { h += card("f" + it.feat, "F" + it.feat + " - " + sec.name.replace(/^Features: /, ""), it.act, it.see, "feat"); }
         else if (it.step) { h += card("s" + it.step, "Step " + it.step + " - " + sec.name, it.act, it.see); }
         else if (it.check) { h += card("c" + si + "-" + (++ci), "Check - " + sec.name, it.check.replace(/^\*\*Check,?\s*/, "**"), "", "check"); }
       });
