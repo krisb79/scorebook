@@ -583,6 +583,12 @@ var App = (function () {
         $("drawerClose").addEventListener("click", function () { drawer(false); });
         $("drawerScrim").addEventListener("click", function () { drawer(false); });
         $("drawerGame").addEventListener("click", function () { Huddles.game(); });
+        // the full game test checklist (test.html) in its own narrow window beside the app
+        $("drawerTest").addEventListener("click", function () {
+            var w = window.open("test.html", "scorebookTestRun", "width=420,height=" + Math.max(600, screen.availHeight - 80) + ",left=" + Math.max(0, screen.availWidth - 440) + ",top=0");
+            if (!w) { location.href = "test.html"; }
+            drawer(false);
+        });
         $("themeSeg").addEventListener("click", function (e) { var b = e.target.closest("[data-theme]"); if (b) { setTheme(b.getAttribute("data-theme")); } });
         setTheme(recall("theme") || "auto");
         $("trackSeg").addEventListener("click", function (e) { var b = e.target.closest("[data-track]"); if (b) { setTracking(b.getAttribute("data-track") === "on"); } });

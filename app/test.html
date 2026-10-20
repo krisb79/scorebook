@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scorebook Test Run</title>
+<!-- stats/app/test.html - the full game test (GAME_TEST_SCRIPT.md) as a checklist to keep in a narrow window next to
+     the app: each step = what to do, what the app should show, Works / Bug / Upgrade, notes. Answers are kept on
+     this device; COPY REPORT / EMAIL REPORT send them on. The steps come from test_steps.js (test_script.js). -->
+<style>
+:root { --bg: #eef1f4; --panel: #fff; --fg: #141a21; --muted: #5b6672; --line: #d7dde4; --blue: #2f8cff;
+  --good: #1b7f3b; --bad: #c62828; --up: #b26a00; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f1318; --panel: #181e25; --fg: #e7ebef; --muted: #96a1ad; --line: #2a333d;
+  --good: #4cc274; --bad: #ff8a80; --up: #ffb74d; color-scheme: dark; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 10px; }
+header h1 { font-size: 15px; margin: 0 0 6px; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; }
+.bar .w { background: var(--good); } .bar .b { background: var(--bad); } .bar .u { background: var(--up); }
+.counts { font-size: 12px; color: var(--muted); margin: 4px 0 6px; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 10px; min-height: 34px; cursor: pointer; font-weight: 700; }
+button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+input.who { flex: 1; min-width: 120px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--bg); }
+main { padding: 8px; }
+h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 2px 6px; }
+.text { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; }
+.text p { margin: 4px 0; } .text ul, .text ol { margin: 4px 0; padding-left: 20px; }
+.text table { border-collapse: collapse; width: 100%; font-size: 12px; } .text td, .text th { border-bottom: 1px solid var(--line); padding: 3px 4px; text-align: left; }
+.card { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+.card.cur { box-shadow: 0 0 0 2px var(--blue); }
+.card.works { border-left-color: var(--good); } .card.bug { border-left-color: var(--bad); } .card.upgrade { border-left-color: var(--up); }
+.card .n { font-weight: 900; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+.card .act { margin: 4px 0; }
+.card .see { font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 4px; }
+.card .see b, .card .act b { color: var(--fg); }
+.card.check .act { font-weight: 700; }
+select.mark { width: 100%; margin-top: 6px; min-height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; background: var(--bg); font-weight: 700; }
+select.mark.works { background: var(--good); border-color: var(--good); color: #fff; }
+select.mark.bug { background: var(--bad); border-color: var(--bad); color: #fff; }
+select.mark.upgrade { background: var(--up); border-color: var(--up); color: #141a21; }
+textarea { width: 100%; margin-top: 6px; min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--bg); resize: vertical; }
+.hidden { display: none; }
+footer { padding: 10px 8px 40px; }
+.toast { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); background: #141a21; color: #fff; padding: 8px 14px; border-radius: 10px; font-weight: 700; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.toast.show { opacity: 1; }
+@media (hover: hover) { button:hover { box-shadow: 0 0 0 2px var(--blue); } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Test run</h1>
+  <div class="bar" id="bar"></div>
+  <div class="counts" id="counts"></div>
+  <div class="row">
+    <input class="who" id="who" placeholder="Your name" autocomplete="off">
+    <button id="filter" title="Show every step, or only the ones not marked yet">SHOW: ALL</button>
+    <button id="next" title="Jump to the first step not marked yet">NEXT</button>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <button class="primary" id="copy">COPY REPORT</button>
+    <button id="email">EMAIL REPORT</button>
+    <button id="reset" title="Clear every answer on this device (asks first)">START OVER</button>
+  </div>
+</header>
+<main id="main"></main>
+<footer class="text" style="margin:8px">
+  <b>How it works:</b> keep this window narrow next to the app. Do each step, then mark it <b>Works</b>, <b>Bug</b> (it did
+  something wrong) or <b>Upgrade</b> (it works, but could be better), and add a note when it helps. Answers stay on this
+  device. COPY REPORT puts the report on the clipboard for any email; EMAIL REPORT opens your mail app with it.
+</footer>
+<div class="toast" id="toast"></div>
+<script src="test_steps.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = "scorebook.testrun." + TEST.title, S = load(), onlyOpen = false, toastT = 0;
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { return {}; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* private mode */ } }
+  function esc(t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  // the script's markdown bits: **bold**, `code`, <br>
+  function md(t) { return esc(t).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>").replace(/&lt;br&gt;/g, "<br>"); }
+  function plain(t) { return String(t || "").replace(/\*\*/g, "").replace(/`/g, "").replace(/<br>/g, " / "); }
+  S.marks = S.marks || {}; S.notes = S.notes || {};
+  $("title").textContent = TEST.title;
+  $("who").value = S.who || "";
+
+  // every markable item gets an id: s<step>, or c<section>-<n> for a check
+  var items = [];
+  function textBlock(lines) {
+    var h = "", tbl = [], list = null, para = [];
+    function flushPara() { if (para.length) { h += "<p>" + md(para.join(" ")) + "</p>"; para = []; } }
+    function flushTable() { if (tbl.length) { h += "<table>" + tbl.map(function (r, i) { var c = r.split("|").slice(1, -1); return "<tr>" + c.map(function (x) { return (i ? "<td>" : "<th>") + md(x.trim()) + (i ? "</td>" : "</th>"); }).join("") + "</tr>"; }).join("") + "</table>"; tbl = []; } }
+    function flushList() { if (list) { h += "<" + list.t + ">" + list.items.map(function (x) { return "<li>" + md(x) + "</li>"; }).join("") + "</" + list.t + ">"; list = null; } }
+    lines.forEach(function (l) {
+      var m;
+      if (/^\|---/.test(l)) { return; }
+      if (/^\|/.test(l)) { flushPara(); flushList(); tbl.push(l); return; }
+      flushTable();
+      if (/^\s*(\d+\.|-)\s/.test(l)) { flushPara(); }
+      if ((m = /^\s*(\d+)\.\s+(.*)$/.exec(l))) { if (!list || list.t !== "ol") { flushList(); list = { t: "ol", items: [] }; } list.items.push(m[2]); return; }
+      if ((m = /^\s*-\s+(.*)$/.exec(l))) { if (!list || list.t !== "ul") { flushList(); list = { t: "ul", items: [] }; } list.items.push(m[1]); return; }
+      if (/^\s{2,}\S/.test(l) && list) { list.items[list.items.length - 1] += " " + l.trim(); return; }
+      flushList();
+      if (l.trim()) { para.push(l.trim()); } else { flushPara(); }   // the script wraps paragraphs over lines
+    });
+    flushPara(); flushTable(); flushList();
+    return h ? '<div class="text">' + h + "</div>" : "";
+  }
+  function card(id, head, act, see, cls) {
+    var m = S.marks[id] || "";
+    items.push({ id: id, head: head, act: act, see: see });
+    return '<div class="card ' + (cls || "") + " " + m + '" id="' + id + '" data-id="' + id + '">' +
+      '<div class="n"><span>' + esc(head) + "</span><span>" + (m ? esc(m.toUpperCase()) : "") + "</span></div>" +
+      '<div class="act">' + md(act) + "</div>" + (see ? '<div class="see">' + md(see) + "</div>" : "") +
+      '<select class="mark ' + m + '" data-mark="' + id + '"><option value="">- result -</option>' + ["works", "bug", "upgrade"].map(function (v) {
+        return '<option value="' + v + '"' + (m === v ? " selected" : "") + ">" + { works: "Works", bug: "Bug", upgrade: "Upgrade" }[v] + "</option>"; }).join("") + "</select>" +
+      '<textarea placeholder="Notes" data-note="' + id + '">' + esc(S.notes[id] || "") + "</textarea></div>";
+  }
+  function draw() {
+    var h = "";
+    items = [];
+    TEST.sections.forEach(function (sec, si) {
+      var text = [], ci = 0;
+      h += "<h2>" + esc(sec.name) + "</h2>";
+      sec.items.forEach(function (it) {
+        if (it.text !== undefined) { text.push(it.text); return; }
+        h += textBlock(text); text = [];
+        if (it.step) { h += card("s" + it.step, "Step " + it.step + " - " + sec.name, it.act, it.see); }
+        else if (it.check) { h += card("c" + si + "-" + (++ci), "Check - " + sec.name, it.check.replace(/^\*\*Check,?\s*/, "**"), "", "check"); }
+      });
+      h += textBlock(text);
+      if (sec.name === "Final checks") { h += card("final", "Final checks", "The score, team stats and leaders above match the app", ""); }
+    });
+    $("main").innerHTML = h;
+    progress();
+  }
+  function progress() {
+    var n = items.length, c = { works: 0, bug: 0, upgrade: 0 }, k, first = null;
+    items.forEach(function (it) { var m = S.marks[it.id]; if (m) { c[m]++; } else if (!first) { first = it.id; } });
+    k = c.works + c.bug + c.upgrade;
+    $("bar").innerHTML = ["w", "b", "u"].map(function (x, i) { var v = [c.works, c.bug, c.upgrade][i]; return '<i class="' + x + '" style="width:' + (v / n * 100) + '%"></i>'; }).join("");
+    $("counts").textContent = k + " of " + n + " marked - " + c.works + " works, " + c.bug + " bugs, " + c.upgrade + " upgrades";
+    Array.prototype.forEach.call(document.querySelectorAll(".card"), function (el) {
+      el.classList.toggle("cur", el.id === first);
+      el.classList.toggle("hidden", onlyOpen && !!S.marks[el.id]);
+    });
+    return first;
+  }
+  function toast(t) { $("toast").textContent = t; $("toast").classList.add("show"); clearTimeout(toastT); toastT = setTimeout(function () { $("toast").classList.remove("show"); }, 2200); }
+
+  $("main").addEventListener("change", function (e) {
+    var id = e.target.getAttribute("data-mark"), cd;
+    if (!id) { return; }
+    if (e.target.value) { S.marks[id] = e.target.value; } else { delete S.marks[id]; }
+    save();
+    cd = e.target.closest(".card");
+    ["works", "bug", "upgrade"].forEach(function (x) { cd.classList.toggle(x, S.marks[id] === x); e.target.classList.toggle(x, S.marks[id] === x); });
+    cd.querySelector(".n span:last-child").textContent = S.marks[id] ? S.marks[id].toUpperCase() : "";
+    progress();
+  });
+  $("main").addEventListener("input", function (e) {
+    var id = e.target.getAttribute("data-note");
+    if (!id) { return; }
+    if (e.target.value) { S.notes[id] = e.target.value; } else { delete S.notes[id]; }
+    save();
+  });
+  $("who").addEventListener("input", function () { S.who = this.value; save(); });
+  $("filter").addEventListener("click", function () { onlyOpen = !onlyOpen; this.textContent = onlyOpen ? "SHOW: NOT MARKED" : "SHOW: ALL"; this.classList.toggle("on", onlyOpen); progress(); });
+  $("next").addEventListener("click", function () { var f = progress(); if (f) { $(f).scrollIntoView({ behavior: "smooth", block: "center" }); } else { toast("Every step is marked"); } });
+  $("reset").addEventListener("click", function () {
+    if (!window.confirm("Clear every answer and note on this device?")) { return; }
+    S = { who: S.who, marks: {}, notes: {} }; save(); draw();
+  });
+
+  // The report: totals, then every bug / upgrade (and any note on a step that works), step by step.
+  function report() {
+    var c = { works: 0, bug: 0, upgrade: 0 }, lines = [], open = 0;
+    items.forEach(function (it) {
+      var m = S.marks[it.id], note = S.notes[it.id];
+      if (m) { c[m]++; } else { open++; }
+      if (m === "bug" || m === "upgrade" || note) {
+        lines.push("");
+        lines.push((m ? m.toUpperCase() : "NOTE") + " - " + it.head);
+        lines.push("  Did: " + plain(it.act));
+        if (it.see) { lines.push("  Expected: " + plain(it.see)); }
+        if (note) { lines.push("  Notes: " + note.replace(/\n/g, "\n         ")); }
+      }
+    });
+    return ["Scorebook test run - " + TEST.title, "Tester: " + (S.who || "-") + "    Date: " + new Date().toLocaleString(),
+      "App: " + location.href.replace(/test\.html.*$/, ""),
+      "", "Marked " + (items.length - open) + " of " + items.length + ": " + c.works + " works, " + c.bug + " bugs, " + c.upgrade + " upgrades" + (open ? " (" + open + " not marked)" : ""),
+      lines.length ? "" : "", lines.length ? "Bugs, upgrades and notes:" : "No bugs, upgrades or notes."].concat(lines).join("\n");
+  }
+  $("copy").addEventListener("click", function () {
+    var t = report();
+    function fallback() { var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); toast("Report copied - paste it into an email"); } catch (e) { toast("Couldn't copy"); } ta.remove(); }
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).then(function () { toast("Report copied - paste it into an email"); }, fallback); } else { fallback(); }
+  });
+  $("email").addEventListener("click", function () {
+    var t = report(), subject = "Scorebook test run - " + (S.who || "report");
+    if (t.length > 1800) { t = t.slice(0, 1800) + "\n\n(cut short - use COPY REPORT for the whole report)"; }
+    location.href = "mailto:?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(t);
+  });
+
+  draw();
+})();
+</script>
+</body>
+</html>
