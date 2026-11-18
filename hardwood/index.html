@@ -1,0 +1,1031 @@
+<title>Scorebook HARDWOOD</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- Scorebook HARDWOOD - proof of concept for the basketball stats app with player stats (2026-10-20). Built from
+     Scorebook's own look (stats/app/app.css: light/dark tokens, dark strip, team gradients) and its rule that the event
+     log is the only truth: score, box score, fouls, bonus and play-by-play are all worked out from EV every time.
+     Sample game, not wired to anything. Plain ASCII. -->
+<style>
+/* Layout: Scorebook's strip, then players | action pad | players, then BOX SCORE / PLAYS / TEAM underneath. */
+:root {
+  --bg:#eef1f4; --panel:#ffffff; --fg:#141a21; --muted:#5b6672; --line:#d7dde4; --soft:#f4f6f8;
+  --away:#7028B8; --away-ink:#ffffff; --home:#01c4c7; --home-ink:#062a33;
+  --accent:#f2c200; --good:#1b7f3b; --bad:#b3261e; --warn:#b86e00; --sel:#2f8cff;
+  --strip-bg:#141a21; --strip-fg:#ffffff; --strip-muted:#a9b4c0;
+  --ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r:10px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0f1318; --panel:#181e25; --fg:#e7ebef; --muted:#96a1ad; --line:#2a333d; --soft:#1f262e;
+  --away:#8a45d6; --home:#01c4c7; --good:#4cc274; --bad:#ff8a80; --warn:#f5b041; --sel:#5aa6ff; --strip-bg:#0a0d11; color-scheme:dark; } }
+:root[data-theme="dark"] {
+  --bg:#0f1318; --panel:#181e25; --fg:#e7ebef; --muted:#96a1ad; --line:#2a333d; --soft:#1f262e;
+  --away:#8a45d6; --home:#01c4c7; --good:#4cc274; --bad:#ff8a80; --warn:#f5b041; --sel:#5aa6ff; --strip-bg:#0a0d11; color-scheme:dark; }
+
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }   /* the ask bars / toast / ghost use display:flex etc. - hidden must win */
+html, body { height:100%; }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.35 var(--ui); -webkit-tap-highlight-color:transparent; }
+button { font:inherit; color:inherit; cursor:pointer; }
+button:focus-visible { outline:3px solid var(--sel); outline-offset:2px; }
+.num { font-variant-numeric:tabular-nums; }
+.muted { color:var(--muted); }
+
+#app { min-height:100%; display:flex; flex-direction:column; }
+
+/* ---- top bar (PLAYBOOK's header: the HARDWOOD tiles left, the menu right), kept slim ---- */
+.top { display:flex; align-items:center; gap:10px; height:44px; background:#1b1c1e; border-bottom:1px solid #2c2e31;
+  padding-left:max(12px, env(safe-area-inset-left, 0px)); padding-right:max(12px, env(safe-area-inset-right, 0px)); }
+.top img { height:30px; width:auto; display:block; }
+.top .app { font-size:.7em; font-weight:800; letter-spacing:.22em; color:#fdbb30; }
+.top .pg { flex:1; font-size:.72em; font-weight:800; letter-spacing:.12em; color:#8b9097; }
+#menuBtn { width:40px; height:34px; border-radius:8px; border:1px solid #3a3d41; background:#26282b; color:#f2eee3; font-size:1.25em; line-height:1; display:flex; align-items:center; justify-content:center; }
+#menuBtn[aria-expanded="true"] { background:#3a3d41; }
+#menu { position:absolute; right:max(12px, env(safe-area-inset-right, 0px)); top:48px; z-index:25; min-width:220px; background:#1b1c1e; border:1px solid #3a3d41; border-radius:12px; padding:6px; box-shadow:0 12px 28px rgba(0,0,0,.4); display:flex; flex-direction:column; gap:4px; }
+#menu button { text-align:left; min-height:46px; padding:0 14px; border-radius:8px; border:0; background:transparent; color:#f2eee3; font-weight:800; letter-spacing:.06em; }
+#menu button small { display:block; font-size:.7em; font-weight:600; letter-spacing:0; color:#8b9097; }
+#menu button.on { background:#2c2e31; box-shadow:inset 3px 0 0 #fdbb30; }
+@media (hover:hover) { #menu button:hover, #menuBtn:hover { background:#2c2e31; } }
+/* pages from the menu */
+.page { padding-block:10px 16px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:10px; align-content:start; }
+.page h2 { margin:0; font-size:1em; letter-spacing:.08em; }
+.cols2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+.rr { display:grid; grid-template-columns:44px minmax(0,1fr) 44px 44px 70px; gap:8px; align-items:center; padding:6px 4px; border-bottom:1px solid var(--line); font-size:.9em; }
+.rr.h { font-size:.68em; font-weight:800; letter-spacing:.06em; color:var(--muted); }
+.rr .j { font-weight:900; text-align:center; border-radius:6px; padding:3px 0; }
+.set { display:grid; grid-template-columns:200px minmax(0,1fr); gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+.set:last-child { border-bottom:0; } .set .k { font-weight:800; font-size:.85em; } .set .k small { display:block; font-weight:600; color:var(--muted); font-size:.85em; }
+.seg { display:flex; gap:6px; flex-wrap:wrap; } .seg button { min-height:40px; padding:0 14px; border-radius:8px; border:1px solid var(--line); background:var(--soft); font-weight:800; font-size:.82em; }
+.seg button.on { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+.field { min-height:40px; display:flex; align-items:center; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--soft); color:var(--muted); font-size:.85em; }
+
+/* ---- strip (Scorebook's) ---- */
+.strip { display:grid; grid-template-columns:minmax(0,.62fr) minmax(0,1.9fr) minmax(0,.62fr); gap:8px; background:var(--strip-bg); color:var(--strip-fg);
+  padding-block:8px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.sb { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; padding:6px 10px; border-radius:12px; border:2px solid transparent; }
+.sb.away { background:linear-gradient(135deg, var(--away), color-mix(in srgb, var(--away) 70%, #000)); color:var(--away-ink); }
+.sb.home { background:linear-gradient(225deg, var(--home), color-mix(in srgb, var(--home) 70%, #000)); color:var(--home-ink); flex-direction:row-reverse; }
+.sb.has { border-color:#fff; } .sb:not(.has) { filter:saturate(.6) brightness(.85); }
+.sb .info { display:flex; flex-direction:column; gap:4px; min-width:0; } .sb.home .info { align-items:flex-end; }
+.sb .nm { font-weight:900; letter-spacing:.03em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sb .row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; } .sb.home .row { flex-direction:row-reverse; }
+.tag { font-size:.68em; font-weight:800; padding:2px 7px; border-radius:6px; background:rgba(0,0,0,.25); white-space:nowrap; }
+.tag.bonus { background:var(--accent); color:#141a21; }
+.tag.arrow { border:1.5px dashed currentColor; background:transparent; opacity:.6; } .sb.has .tag.arrow { background:#fff; color:#141a21; border-color:#fff; opacity:1; }
+.sb .sc { font-size:2em; font-weight:900; line-height:1; background:rgba(0,0,0,.25); border-radius:8px; padding:4px 10px; color:#fff; }
+#mid { display:flex; gap:8px; min-width:0; align-items:stretch; }
+.clock { min-width:96px; background:#000; border:1px solid rgba(255,255,255,.18); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2px 8px; }
+.clock .p { font-size:.68em; font-weight:800; color:var(--strip-muted); letter-spacing:.08em; } .clock .t { font-size:1.4em; font-weight:900; }
+#situW { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; background:rgba(255,255,255,.06); border-radius:10px; padding:4px 8px; }
+#situ { font-size:1.12em; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+#detail { font-size:.72em; color:var(--strip-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.field.in { color:var(--fg); font:inherit; font-size:.85em; width:100%; box-sizing:border-box; }
+.sync.off { background:var(--soft); color:var(--muted); border-color:var(--line); }
+.sync.busy { background:rgba(90,166,255,.15); color:var(--sel); border-color:rgba(90,166,255,.5); }
+.sync.bad { background:rgba(245,176,65,.18); color:var(--warn); border-color:rgba(245,176,65,.6); }
+.sync { align-self:center; font-size:.68em; font-weight:800; padding:4px 8px; border-radius:8px; background:rgba(76,194,116,.18); color:#7fe0a0; border:1px solid rgba(76,194,116,.5); white-space:nowrap; }
+
+/* ---- score cards (2026-11-14): each side column starts with its team's score - AWAY with the period + clock,
+   HOME with the SYNCED chip - on the dark strip colour; the center card starts at the top between them ---- */
+.side { display:flex; flex-direction:column; gap:10px; min-width:0; }
+.scoreCard { display:flex; gap:8px; align-items:stretch; background:var(--strip-bg); color:var(--strip-fg); border-radius:12px; padding:8px; }
+.scoreCard .sb { flex:1; }
+.scoreCard .clock { min-width:84px; }
+/* (2026-11-18) no game clock - just the quarter: tap it to pick Q1-Q4 / OT; every play is stamped with it */
+.scoreCard { position:relative; }
+button.clock { color:inherit; font:inherit; cursor:pointer; } button.clock:hover { border-color:var(--accent); }
+#perMenu { position:absolute; top:calc(100% + 6px); right:0; z-index:30; display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px; background:var(--strip-bg); border:1px solid rgba(255,255,255,.18); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.45); }
+#perMenu[hidden] { display:none; }
+#perMenu button { min-width:58px; min-height:44px; font-weight:900; border-radius:8px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:var(--strip-fg); cursor:pointer; }
+#perMenu button.on { background:var(--accent); color:#141a21; border-color:var(--accent); }
+#padCard > .tabs button { flex:1; min-height:40px; }
+#logView { display:flex; flex-direction:column; gap:8px; }
+
+/* ---- work area ---- */
+.work { flex:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr); gap:10px;
+  padding-block:10px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+/* ---- DEMO (2026-11-18): the copy producers try out - no sheet, no live link, a how-to on the first screen ---- */
+.demo #syncChip, .demo #liveChip, .demo .syncOnly { display:none !important; }
+#howTo { position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; }
+#howTo[hidden] { display:none; }
+#howTo .box { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:14px; max-width:560px; width:100%; max-height:90vh; overflow:auto; padding:16px 18px; box-shadow:0 12px 40px rgba(0,0,0,.45); }
+#howTo h2 { margin:0 0 4px; letter-spacing:.04em; } #howTo p { margin:4px 0 10px; color:var(--muted); }
+#howTo ol { margin:0 0 12px; padding-left:1.3em; line-height:1.45; } #howTo li { margin:4px 0; }
+#howTo .go { display:block; width:100%; min-height:48px; font-weight:900; border-radius:10px; border:0; background:var(--accent); color:#141a21; cursor:pointer; font:inherit; font-weight:900; }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.cardHead { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+.lbl { font-size:.7em; font-weight:800; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; }
+.tiny { min-height:30px; padding:0 10px; border-radius:8px; border:1px solid var(--line); background:var(--soft); font-size:.72em; font-weight:800; }
+
+/* player tiles: the five on the floor, then the bench */
+.floor { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+.pt { display:grid; grid-template-columns:48px minmax(0,1fr) auto; gap:8px; align-items:center; text-align:left; background:var(--soft); border:2px solid var(--line); border-radius:var(--r); padding:6px 8px; min-height:52px; }
+.pt .j { font-size:1.35em; font-weight:900; text-align:center; border-radius:8px; padding:2px 0; }
+.away .pt .j, .pt.a .j { background:var(--away); color:var(--away-ink); } .pt.h .j { background:var(--home); color:var(--home-ink); }
+.pt .n { min-width:0; } .pt .n b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .pt .n span { font-size:.75em; color:var(--muted); }
+.pt .pts { font-size:1.25em; font-weight:900; text-align:right; } .pt .pf { display:flex; gap:3px; justify-content:flex-end; margin-top:3px; }
+.pt .pf i { width:8px; height:8px; border-radius:50%; border:1.5px solid var(--muted); } .pt .pf i.on { background:var(--fg); border-color:var(--fg); }
+.pt.f4 .pf i.on { background:var(--warn); border-color:var(--warn); } .pt.f5 { opacity:.55; } .pt.f5 .pf i.on { background:var(--bad); border-color:var(--bad); }
+/* a question for this team (ASSIST BY? REBOUND BY?...): tap the player on the card, or the NO ... button */
+.askBar { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:var(--r); background:color-mix(in srgb, var(--sel) 14%, var(--panel)); border:2px solid var(--sel); }
+.askBar .q { flex:1; font-weight:900; font-size:1.05em; letter-spacing:.02em; }
+.askBar button { min-height:46px; padding:0 16px; border-radius:var(--r); border:2px solid var(--fg); background:var(--panel); font-weight:900; }
+.card.asking { border-color:var(--sel); box-shadow:0 0 0 3px color-mix(in srgb, var(--sel) 30%, transparent); }
+.card.quiet { opacity:.4; }
+.card.asking .pt:not(.pick) { opacity:.35; }
+.card.asking .pt.pick { border-style:solid; border-color:var(--sel); }
+.card.asking .bench button.pick { border:2px solid var(--sel); background:color-mix(in srgb, var(--sel) 12%, var(--panel)); }
+.pt.team { border-style:dashed; } .pt.team .j { background:transparent !important; color:var(--muted) !important; border:2px dashed var(--muted); }
+.pl { cursor:default; } .pl.need { border-color:var(--warn); background:color-mix(in srgb, var(--warn) 12%, var(--panel)); cursor:pointer; }
+.pl.need .x::after { content:'  TAP TO ASSIGN, OR DRAG A PLAYER HERE'; font-size:.72em; font-weight:900; color:var(--warn); letter-spacing:.04em; }
+.pl.drop { outline:3px solid var(--sel); outline-offset:1px; }
+#tabs button.need { border-color:var(--warn); color:var(--warn); } #tabs button.need.on { background:var(--warn); border-color:var(--warn); color:#fff; }
+tr.need td { color:var(--warn); font-weight:800; }
+.pt.sel { border-color:var(--sel); box-shadow:0 0 0 3px color-mix(in srgb, var(--sel) 35%, transparent); }
+.pt.pick { border-style:dashed; border-color:var(--sel); }
+.bench { display:flex; flex-wrap:wrap; gap:5px; } .bench button { min-height:34px; min-width:44px; border-radius:8px; border:1px solid var(--line); background:var(--soft); font-weight:800; font-size:.85em; }
+.bench button.pick { border:2px dashed var(--sel); }
+/* (2026-11-14) bench players log plays too - tap one, or drag him onto the court - crews don't always track who's on */
+.bench button { touch-action:none; } .bench button.drag { opacity:.45; }
+.bench button.sel { border:2px solid var(--sel); box-shadow:0 0 0 3px color-mix(in srgb, var(--sel) 35%, transparent); }
+#follow .fp.more { flex:none; min-width:58px; border-style:dashed; color:var(--muted); font-size:.68em; font-weight:900; }
+#follow .fp.more.on { border-style:solid; color:var(--fg); }
+#follow .fuBench { display:flex; flex-wrap:wrap; gap:6px; padding-left:54px; }
+#follow .fuBench button { min-height:40px; min-width:52px; padding:0 8px; font-size:.85em; font-weight:900; }
+
+/* action pad */
+#sentence { min-height:48px; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:800; border:2px dashed var(--line); border-radius:var(--r); padding:6px 10px; background:var(--soft); }
+#sentence.ready { border-style:solid; border-color:var(--sel); }
+.grp { display:grid; gap:6px; } .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); } .g4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+/* the court: full court, a basket at each end; TOP half = MISSED, BOTTOM half = MADE, for the paints, the 2s and the 3s */
+#courtBox { border-radius:var(--r); overflow:hidden; border:2px solid var(--line); }
+#courtBox.over { border-color:var(--sel); }
+#court { display:block; width:100%; height:auto; max-width:100%; touch-action:none; cursor:crosshair; }
+#court .ln { fill:none; stroke:rgba(255,255,255,.9); stroke-width:3; }
+#court .zl { font:900 15px var(--ui); fill:#fff; paint-order:stroke; stroke:rgba(0,0,0,.45); stroke-width:3px; text-anchor:middle; pointer-events:none; }
+#court .zl.s { font-size:12px; }
+#court .aim { fill:none; stroke:#fff; stroke-width:3; stroke-dasharray:5 4; pointer-events:none; }
+.pt { touch-action:none; } .pt.drag { opacity:.45; }
+#ghost { position:fixed; z-index:30; pointer-events:none; transform:translate(-50%,-120%); font:900 1.3em var(--ui); padding:6px 12px; border-radius:10px; border:2px solid #fff; box-shadow:0 8px 20px rgba(0,0,0,.35); }
+.act { min-height:58px; border-radius:var(--r); border:1px solid var(--line); background:var(--soft); font-weight:900; font-size:.95em; line-height:1.1; }
+.act small { display:block; font-size:.66em; font-weight:700; color:var(--muted); margin-top:2px; }
+.act.make { background:color-mix(in srgb, var(--good) 16%, var(--panel)); border-color:var(--good); }
+.act.miss { background:color-mix(in srgb, var(--bad) 12%, var(--panel)); border-color:var(--bad); }
+.act:disabled { opacity:.4; cursor:default; }
+#follow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:44px; padding:6px; border-radius:var(--r); background:color-mix(in srgb, var(--sel) 10%, var(--panel)); border:1px solid color-mix(in srgb, var(--sel) 40%, var(--line)); }
+#follow .q { font-weight:900; font-size:.85em; margin-right:4px; }
+#follow button { min-height:38px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel); font-weight:800; }
+#follow button.a { border-color:var(--away); } #follow button.h { border-color:var(--home); }
+/* FOLLOW-UP card with a question open: question + NO ... on top, a row of player buttons per team */
+#follow.live { flex-direction:column; align-items:stretch; flex-wrap:nowrap; gap:8px; padding:10px; border:2px solid var(--warn); background:color-mix(in srgb, var(--warn) 10%, var(--panel)); }
+#follow .fuHead { display:flex; align-items:center; gap:8px; } #follow .fuHead .q { flex:1; font-size:1.05em; letter-spacing:.02em; }
+#follow .fuHead .none { min-height:44px; padding:0 16px; border:2px solid var(--fg); font-weight:900; }
+#follow .fuRow { display:flex; gap:6px; align-items:stretch; flex-wrap:nowrap; }
+/* a question never locks the pad (2026-11-14): starting a new play answers it with NO ... . While it's open the hint
+   bar steps aside (the FOLLOW-UP card says who and what) and the action buttons get shorter, so it all fits on the iPad */
+#logView.asking #sentence { display:none; }
+#logView.asking .act { min-height:40px; } #logView.asking .act small { display:none; }
+#follow .fuTeam { display:flex; align-items:center; justify-content:center; min-width:48px; border-radius:8px; font-weight:900; font-size:.8em; letter-spacing:.04em; }
+#follow .fp { flex:1; min-width:0; min-height:50px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:2px 6px; font-size:.7em; line-height:1.1; }
+#follow .fp b { font-size:1.6em; font-weight:900; } #follow .fp.some { border-style:dashed; color:var(--muted); }
+.padFoot { display:flex; gap:6px; } .padFoot button { flex:1; }
+@media (hover:hover) { .act:not(:disabled):hover, .pt:hover, .tiny:hover, .bench button:hover, #follow button:hover, .tabs button:hover { filter:brightness(.96); box-shadow:0 0 0 2px var(--sel); } }
+
+/* box score / plays / team */
+.lower { padding-block:0 12px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.tabs { display:flex; gap:6px; flex-wrap:wrap; } .tabs button { min-height:36px; padding:0 14px; border-radius:8px; border:1px solid var(--line); background:var(--soft); font-weight:800; font-size:.82em; }
+.tabs button.on { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+.tableWrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:.85em; }
+table.box { border-collapse:separate; border-spacing:0; }
+table.box th, table.box td { padding:6px 2px; } table.box td.l, table.box th.l { padding-left:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* box scores: two halves (AWAY top, HOME bottom) filling the center card; each scrolls, heads + TEAM totals stay put */
+#tabBody.boxMode { height:calc(100vh - 136px); min-height:420px; }
+#tabBody.vsMode { height:calc(100vh - 136px); min-height:420px; overflow:auto; scrollbar-gutter:stable; }   /* TEAM STATS scrolls inside the card; the team names stay on top */
+.boxSplit { height:100%; display:flex; flex-direction:column; gap:10px; }
+.boxHalf { flex:1; min-height:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+.boxScroll { flex:1; min-height:0; overflow:auto; scrollbar-gutter:stable; }
+.boxTot { flex:none; overflow:hidden; scrollbar-gutter:stable; border-bottom:2px solid var(--fg); }   /* same gutter as the list, so the columns line up */
+table.box { table-layout:fixed; }
+.boxTot tr.tot td { border-top:0; border-bottom:0; }
+table.box th:not(.l), table.box td:not(.l) { text-align:center; }   /* stats centred in their columns */
+table.box thead th { position:sticky; top:0; z-index:2; }
+table.box .tm { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+table.box thead th.l { color:var(--fg); font-size:.8em; }
+/* every other column shaded so the eye can follow a column down */
+table.box th:nth-child(even), table.box td:nth-child(even) { background-image:linear-gradient(color-mix(in srgb, var(--fg) 7%, transparent), color-mix(in srgb, var(--fg) 7%, transparent)); }
+table.box thead th { background-color:var(--panel); }
+/* tap a player's row: a rounded yellow border round it (the same amber as the TO ASSIGN tab) */
+table.box tr[data-row] { cursor:pointer; }
+table.box tr.mini td { font-size:.6em; font-weight:800; letter-spacing:.05em; color:var(--warn); padding:3px 2px 1px; border-bottom:0; line-height:1; }
+table.box tr.hi td { font-weight:800; box-shadow:inset 0 2px 0 var(--warn), inset 0 -2px 0 var(--warn); }
+table.box tr.hi td:first-child { border-radius:8px 0 0 8px; box-shadow:inset 2px 0 0 var(--warn), inset 0 2px 0 var(--warn), inset 0 -2px 0 var(--warn); }
+table.box tr.hi td:last-child { border-radius:0 8px 8px 0; box-shadow:inset -2px 0 0 var(--warn), inset 0 2px 0 var(--warn), inset 0 -2px 0 var(--warn); }
+th, td { padding:5px 6px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap; }
+th { font-size:.72em; letter-spacing:.06em; color:var(--muted); font-weight:800; position:sticky; top:0; background:var(--panel); }
+td.l, th.l { text-align:left; } tr.on td { font-weight:700; } tr.tot td { font-weight:900; border-top:2px solid var(--fg); border-bottom:0; }
+td .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--good); margin-right:6px; vertical-align:middle; }
+td.hot { color:var(--warn); font-weight:900; } td.out { color:var(--bad); font-weight:900; }
+#plays { display:flex; flex-direction:column; gap:4px; max-height:640px; overflow:auto; }
+.boxPick { display:flex; gap:6px; margin-bottom:8px; } .boxPick button { flex:1; min-height:38px; border-radius:8px; border:1px solid var(--line); background:var(--soft); font-weight:800; font-size:.82em; } .boxPick button.on { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+.pl { display:grid; grid-template-columns:62px 6px minmax(0,1fr) 64px 40px; gap:8px; align-items:center; background:var(--soft); border:1px solid var(--line); border-radius:8px; padding:4px 8px; font-size:.85em; }
+.pl .bar { align-self:stretch; border-radius:3px; } .pl .x { min-width:0; } .pl .s { text-align:right; font-weight:800; } .pl.score .x { font-weight:800; }
+.pl button { min-height:28px; border-radius:6px; border:1px solid var(--line); background:var(--panel); font-size:.72em; font-weight:800; }
+/* TEAM STATS (2026-11-15) = the football Scorebook's VS table */
+.vsTop { display:flex; justify-content:flex-end; margin-bottom:6px; }
+.vs { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:.92em; }
+.vs th, .vs td { padding:6px 12px; text-align:right; } .vs td:first-child, .vs th:first-child { text-align:left; }
+.vs thead th { position:sticky; top:0; background:var(--panel); font-weight:900; font-size:1.05em; border-bottom:2px solid var(--line); width:26%; }
+.vs thead th:first-child { width:auto; } .vs thead th.a { color:var(--away); } .vs thead th.h { color:color-mix(in srgb, var(--home) 70%, var(--fg)); }
+.vs tr.score td { font-size:1.5em; font-weight:900; border-bottom:1px solid var(--line); }
+.vs tbody td { border-bottom:1px solid var(--line); }
+.vs tr.sec { cursor:pointer; user-select:none; }
+.vs tr.sec th { text-align:left; font-size:.75em; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); background:var(--bg); padding:6px 12px; }
+.vs tr.sec .arr { display:inline-block; width:1.2em; }
+.vs tr.sub td { color:var(--muted); font-size:.9em; } .vs tr.sub td:first-child { padding-left:28px; }
+.vs tr:not(.sub):not(.cmp) td:not(:first-child) { font-weight:800; }
+.vs tr.cmp td { padding:0 12px 6px; } .vs tbody tr:has(+ tr.cmp) td { border-bottom:0; padding-bottom:3px; }
+.vs tr.cmp div { display:flex; gap:2px; height:6px; } .vs tr.cmp i { display:block; flex-basis:0; min-width:2px; border-radius:3px; }
+.vs tr.cmp i.a { background:var(--away); } .vs tr.cmp i.h { background:var(--home); }
+.teamGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+.ts { background:var(--soft); border:1px solid var(--line); border-radius:var(--r); padding:8px 10px; }
+.ts .k { font-size:.68em; font-weight:800; letter-spacing:.06em; color:var(--muted); } .ts .v { display:flex; justify-content:space-between; font-weight:900; font-size:1.05em; margin-top:2px; }
+.ts .v .a { color:var(--away); } .ts .v .h { color:color-mix(in srgb, var(--home) 70%, var(--fg)); }
+
+#toast { position:fixed; left:50%; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); background:var(--fg); color:var(--bg); border-radius:10px; padding:8px 16px; font-weight:800; font-size:.9em; z-index:20; max-width:calc(100% - 32px); text-align:center; }
+
+@media (max-width: 1000px) {
+  .work { grid-template-columns:minmax(0,1fr); } #padCard { order:-1; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+
+<div id="app">
+  <header class="top">
+    <img alt="HARDWOOD" src="data:image/png;base64,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">
+    <span class="app">SCOREBOOK</span>
+    <span class="pg" id="pgName"></span>
+    <button id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="menu">&#9776;</button>
+  </header>
+  <div id="menu" hidden>
+    <button data-page="game">GAME<small>log plays, box scores, play-by-play</small></button>
+    <button data-page="rosters">ROSTERS<small>both teams' players</small></button>
+    <button data-page="settings">SETTINGS<small>game rules, sync, look</small></button>
+    <button id="howToBtn" class="demoOnly" hidden>HOW TO<small>logging plays, in one screen</small></button>
+  </div>
+  <div id="howTo" hidden><div class="box">
+    <h2>SCOREBOOK &middot; HARDWOOD</h2>
+    <p>A test copy with two made-up teams. Your game stays on this device only &mdash; nothing is sent anywhere.</p>
+    <ol>
+      <li><b>Shots:</b> drag a player onto the court. Drop on the <b>bottom half = made</b>, <b>top half = missed</b>; where you drop decides paint / 2 / 3.</li>
+      <li>The basket counts <b>right away</b>. Then answer the question (ASSIST BY? / REBOUND?) or just skip it.</li>
+      <li><b>Everything else:</b> tap a player, then a button &mdash; FREE THROW, OFF REB, DEF REB, ASSIST, STEAL, BLOCK, TURNOVER, FOUL, TEAM REB.</li>
+      <li>On the court: the <b>centre circle</b> is TURNOVER (top) / STEAL (bottom); the strip <b>behind each backboard</b> is BLOCK.</li>
+      <li>Don't know who it was? Use the <b>NO PLAYER</b> tile and pick the player later in PLAY LOG.</li>
+      <li><b>Quarter:</b> tap the quarter box by the score; END OF PERIOD moves to the next one.</li>
+      <li><b>Mistakes:</b> UNDO LAST takes the last play out; PLAY LOG &gt; FIX for older ones.</li>
+      <li>SUB swaps players in and out. BOX SCORES and TEAM STATS show the totals. Menu &gt; SETTINGS &gt; NEW GAME starts over.</li>
+    </ol>
+    <button class="go" id="howToGo">GOT IT &mdash; START LOGGING</button>
+  </div></div>
+  <div class="work" data-for="game">
+    <div class="side">
+      <div class="scoreCard">
+        <div class="sb away has" id="sbA"><div class="info"><div class="nm">WARDIFF</div><div class="row"><span class="tag" id="foulA">FOULS 4</span><span class="tag">TO 3</span></div></div><div class="sc num" id="scA">0</div></div>
+        <button class="clock" id="perBtn" title="Tap to change the quarter"><span class="p">QUARTER</span><span class="t num" id="perT">3RD</span></button>
+        <div id="perMenu" hidden></div>
+      </div>
+      <div class="card away" id="colA">
+        <div class="cardHead"><span class="lbl">Wardiff &middot; on the floor</span><button class="tiny" data-sub="A">SUB</button></div>
+        <div class="askBar" id="askA" hidden></div>
+        <div class="floor" id="floorA"></div>
+        <div class="lbl">Bench</div><div class="bench" id="benchA"></div>
+      </div>
+    </div>
+
+    <div class="card" id="padCard">
+      <div class="tabs" id="tabs"><button class="on" data-tab="log">SCORE GAME</button><button data-tab="plays">PLAY LOG</button><button data-tab="team">TEAM STATS</button><button data-tab="box">BOX SCORES</button></div>
+      <div id="logView">
+        <div id="sentence">Drag a player onto the court for a shot, or tap a player for anything else</div>
+        <div id="courtBox"><svg id="court" viewBox="0 0 940 500" role="img" aria-label="Full court: drop a player on the bottom half for a made shot, the top half for a miss"></svg></div>
+        <div class="grp g2"><button class="act make" data-a="FTM">FREE THROW<small>made</small></button><button class="act miss" data-a="FTX">FREE THROW<small>missed</small></button></div>
+        <div class="grp g4">
+          <button class="act" data-a="OREB">OFF REB</button><button class="act" data-a="DREB">DEF REB</button><button class="act" data-a="AST">ASSIST</button><button class="act" data-a="STL">STEAL</button>
+          <button class="act" data-a="BLK">BLOCK</button><button class="act" data-a="TO">TURNOVER</button><button class="act miss" data-a="PF">FOUL</button><button class="act" data-a="TREB">TEAM REB</button>
+        </div>
+        <div id="follow"><span class="q muted">Follow-up questions show here (assist, rebound, free throws)</span></div>
+        <div class="padFoot"><button class="tiny" id="undo">UNDO LAST</button><button class="tiny" id="tmo">TIMEOUT</button><button class="tiny" id="endPer">END OF PERIOD</button></div>
+      </div>
+      <div id="tabBody" hidden></div>
+    </div>
+
+    <div class="side">
+      <div class="scoreCard">
+        <span class="sync" id="syncChip" title="">NO SHEET</span><span class="sync off" id="liveChip" title="" hidden>LIVE</span>
+        <div class="sb home" id="sbH"><div class="info"><div class="nm">NOVA RIDGE</div><div class="row"><span class="tag" id="foulH">FOULS 7</span><span class="tag">TO 2</span></div></div><div class="sc num" id="scH">0</div></div>
+      </div>
+      <div class="card" id="colH">
+        <div class="cardHead"><span class="lbl">Nova Ridge &middot; on the floor</span><button class="tiny" data-sub="H">SUB</button></div>
+        <div class="askBar" id="askH" hidden></div>
+        <div class="floor" id="floorH"></div>
+        <div class="lbl">Bench</div><div class="bench" id="benchH"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" data-for="rosters" hidden>
+    <div class="cols2" id="rosterCols"></div>
+    <p class="muted" style="margin:0;font-size:.82em">Mockup: the real page adds, edits and imports players (from the Sheet or PLAYBOOK's team files), like football's PLAYERS tab.</p>
+  </div>
+  <div class="page" data-for="settings" hidden>
+    <div class="card">
+      <h2>GAME</h2>
+      <div class="set"><div class="k">Teams</div><div class="field">WARDIFF (WBW) @ NOVA RIDGE (NRH)</div></div>
+      <div class="set"><div class="k">Game rules<small>fouls, bonus, timeouts, period length</small></div><div class="seg" data-set="rules"><button class="on">HIGH SCHOOL BOYS</button><button>HIGH SCHOOL GIRLS</button><button>COLLEGE WOMEN</button><button>COLLEGE MEN</button></div></div>
+      <div class="set"><div class="k">Detail<small>what gets logged</small></div><div class="seg" data-set="detail"><button>TEAM</button><button class="on">TEAM + PLAYERS</button></div></div>
+    </div>
+    <div class="card">
+      <h2>SYNC</h2>
+      <div class="set"><div class="k">Stats sheet<small>the sheet's web app link (ends in /exec)</small></div><input class="field in" id="setUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" spellcheck="false"></div>
+      <div class="set"><div class="k">App key<small>the word set in the sheet (Scorebook menu)</small></div><input class="field in" id="setKey" type="password" autocomplete="off"></div>
+      <div class="set"><div class="k"></div><div class="seg"><button id="setSave">SAVE + SEND</button><button id="setOff">STOP SENDING</button></div></div>
+      <div class="set"><div class="k">Status</div><div class="field" id="setStatus">-</div></div>
+      <div class="set"><div class="k">Live code<small>from PLAYBOOK (strip menu &gt; SCOREBOOK LIVE CODE) - every play reaches PLAYBOOK in under a second; the sheet stays the backup</small></div><input class="field in" id="setLive" type="password" autocomplete="off" spellcheck="false"></div>
+      <div class="set"><div class="k"></div><div class="seg"><button id="liveSave">SAVE LIVE CODE</button><button id="liveOff">STOP LIVE</button></div></div>
+      <div class="set"><div class="k">Live</div><div class="field" id="liveStatus">-</div></div>
+      <div class="set"><div class="k">Game<small>kept on this iPad until a new game</small></div><div class="seg"><button id="newGame">NEW GAME (CLEAR PLAYS)</button></div></div>
+    </div>
+    <div class="card">
+      <h2>LOOK</h2>
+      <div class="set"><div class="k">Theme</div><div class="seg" data-set="theme"><button data-v="">AUTO</button><button data-v="light">LIGHT</button><button data-v="dark">DARK</button></div></div>
+    </div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<div id="ghost" hidden></div>
+
+<script>window.SCOREBOOK_DEMO = true;</script>
+<script>
+// ===== rosters (sample) =====
+var TEAM = { A: { name: 'WARDIFF', short: 'WBW' }, H: { name: 'NOVA RIDGE', short: 'NRH' } };
+var ROSTER = {
+  A: { '5': 'Jalen Calloway', '11': 'Reese Voss', '23': 'Tre Holloway', '3': 'Kade Prescott', '14': 'Mateo Ruiz', '2': 'Brennan Thorne', '12': 'Sawyer Blevins', '21': 'Owen Calloway', '24': 'Luca Marsh', '30': 'Dane Ortega', '42': 'Gus Whitfield' },
+  H: { '1': 'Mason Ingram', '10': 'Malik Upton', '33': 'Darius Webb', '7': 'Jace Yardley', '20': 'Elijah Prescott', '4': 'Kellen Radford', '8': 'Lukas Ledger', '12': 'Nico Banks', '15': 'Theo Strand', '22': 'Isaac Moreno', '44': 'Ty Bramwell' }
+};
+var ONFLOOR = { A: ['5', '11', '23', '3', '14'], H: ['1', '10', '33', '7', '20'] };
+
+// ===== the event log: the only truth =====
+// one event = { per, clock, side, j, a } ; a = FGPM FGPX (2 in the paint) FG2M FG2X (other 2s) FG3M FG3X FTM FTX OREB DREB TREB AST STL BLK TO PF TMO
+// No shot locations (2026-11-14): where a player is dropped only decides paint / 2 / 3 and made / missed - no spot is kept.
+var EV = [];
+(function seed() {   // a made-up game up to 4:12 of the 3rd, built from each player's line so the numbers agree everywhere
+  var lines = {
+    A: { '5': [3, 3, 2, 2, 3, 0, 0, 2, 1, 1, 0, 1, 2], '11': [5, 3, 0, 1, 2, 0, 1, 2, 6, 2, 0, 2, 1], '23': [4, 3, 0, 0, 1, 1, 4, 7, 0, 1, 2, 1, 4],
+         '3': [0, 2, 2, 2, 0, 0, 0, 2, 2, 1, 0, 1, 1], '14': [0, 1, 1, 1, 0, 0, 1, 3, 1, 1, 1, 0, 2], '2': [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0] },
+    H: { '1': [4, 3, 2, 4, 2, 0, 1, 3, 3, 0, 0, 3, 3], '10': [4, 5, 1, 2, 0, 0, 0, 2, 5, 2, 0, 2, 2], '33': [3, 3, 0, 0, 2, 2, 4, 5, 1, 0, 1, 1, 4],
+         '7': [0, 1, 2, 3, 0, 0, 0, 1, 0, 1, 0, 2, 2], '20': [1, 1, 0, 0, 1, 1, 2, 3, 1, 0, 1, 1, 4], '4': [0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1] }
+  };
+  // [FG2M, FG2X, FG3M, FG3X, FTM, FTX, OREB, DREB, AST, STL, BLK, TO, PF]
+  var keys = ['FG2M', 'FG2X', 'FG3M', 'FG3X', 'FTM', 'FTX', 'OREB', 'DREB', 'AST', 'STL', 'BLK', 'TO', 'PF'], list = [];
+  ['A', 'H'].forEach(function (s) { for (var j in lines[s]) lines[s][j].forEach(function (n, k) { for (var i = 0; i < n; i++) list.push({ side: s, j: j, a: keys[k] }); }); });
+  var seedN = 7; function rnd() { seedN = (seedN * 9301 + 49297) % 233280; return seedN / 233280; }
+  list.forEach(function (e) { e.r = rnd(); }); list.sort(function (x, y) { return x.r - y.r; });
+  // about half the 2s were in the paint
+  list.forEach(function (e) { if (/^FG2/.test(e.a) && rnd() < .55) e.a = 'FGP' + e.a.slice(-1); });
+  var total = 2 * 480 + (480 - 252), n = list.length;   // two 8-minute quarters + the 3rd down to 4:12   // 1st quarter 8:00 down to 4:12 of the 3rd
+  list.forEach(function (e, i) {
+    var gone = Math.floor((i + 1) / n * total) - 1, per = Math.min(3, Math.floor(gone / 480) + 1), left = 480 - (gone - (per - 1) * 480);
+    e.per = per; e.clock = Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2); delete e.r; EV.push(e);
+  });
+  // three plays the stat crew logged without a player (made 2 and an assist for Wardiff, a Nova Ridge rebound)
+  var wanted = [['A', /^FG(P|2)M$/], ['A', /^AST$/], ['H', /^DREB$/]];
+  wanted.forEach(function (w) { for (var i = EV.length - 1; i >= 0; i--) if (EV[i].side == w[0] && w[1].test(EV[i].a) && EV[i].j) { EV[i].j = ''; break; } });
+  EV.push({ per: 3, clock: '4:34', side: 'A', j: '5', a: 'FG3M' }, { per: 3, clock: '4:34', side: 'A', j: '11', a: 'AST' });
+})();
+
+// ===== the game is kept on this device (2026-11-15) - a reload carries on; NEW GAME (Settings) clears it =====
+// Every event has an id and a group g: the events one play logged together (a shot + its assist / rebound, a turnover
+// + its steal, a charge's foul + turnover). A group becomes one row on the sheet.
+var NEXT_ID = 1, GAME = { id: 'hw-' + Date.now() };
+var PER = EV.reduce(function (m, e) { return Math.max(m, e.per || 1); }, 1);   // the quarter now: 1-4, 5+ = OT, OT2...
+EV.forEach(function (e, i) { e.id = NEXT_ID++; e.g = (i > 0 && EV[i - 1].per == e.per && e.a == 'AST' && /^FG..M$/.test(EV[i - 1].a)) ? EV[i - 1].g : e.id; });
+(function load() {
+  try {
+    var k = JSON.parse(localStorage.getItem('hardwood.game') || 'null');
+    if (k && k.EV) { EV.length = 0; k.EV.forEach(function (e) { EV.push(e); }); GAME = k.GAME || GAME; NEXT_ID = k.NEXT_ID || 1; if (k.ONFLOOR) ONFLOOR = k.ONFLOOR;
+      PER = k.PER || EV.reduce(function (m, e) { return Math.max(m, e.per || 1); }, 1); }
+  } catch (err) { /* private mode: the game lives only while the page is open */ }
+})();
+function perName(n) { return n <= 4 ? ['1ST', '2ND', '3RD', '4TH'][n - 1] : n == 5 ? 'OT' : 'OT' + (n - 4); }
+function perShort(e) { return e.per <= 4 ? 'Q' + e.per : perName(e.per); }   // play log: Q3 / OT (no clock)
+function saveGame() { try { localStorage.setItem('hardwood.game', JSON.stringify({ GAME: GAME, EV: EV, NEXT_ID: NEXT_ID, ONFLOOR: ONFLOOR, PER: PER })); } catch (err) { } }
+
+// ===== the Google Sheet (2026-11-15): the plays as the stats person types them on In Game =====
+// One row per group, in the block of the team with the ball: NUMBER, the shot box (PAINT / 2PT / 3PT), MADE / MISSED,
+// OFOUL, TURNOVER, ASSIST, ORB, FT1-FT3 (1 made, 0 missed), BLOCK, DRB, DFOUL, STL. "t" = team, "?" = a player not picked yet.
+function sheetRows() {
+  var rows = [], last = null, trip = null, i = 0;
+  function num(j) { return j ? String(j) : ''; }
+  function who2(e) { return e.j ? String(e.j) : '?'; }
+  function row(e, sd, v) { var r = { id: 'e' + e.g, q: e.per, s: sd, v: v }; rows.push(r); last = r; return r; }
+  function reb(r, e) { var x = e.a == 'TREB' ? 't' : who2(e); if (e.side == r.s) r.v.orb = x; else r.v.drb = x; }
+  function open() { if (!last || last.v.orb || last.v.drb) return null; var ft = last.v.ft; return last.v.miss || (ft && ft.length && !ft[ft.length - 1]) ? last : null; }
+  while (i < EV.length) {
+    var g = EV[i].g, grp = [];
+    while (i < EV.length && EV[i].g == g) grp.push(EV[i++]);
+    var e = grp[0], rest = grp.slice(1), a = e.a, oth = e.side == 'A' ? 'H' : 'A', r;
+    var pick = function (codes) { for (var k = 0; k < rest.length; k++) if (codes.indexOf(rest[k].a) >= 0) return rest[k]; return null; };
+    var rb = pick(['OREB', 'DREB', 'TREB']);
+    if (/^FG[P23][MX]$/.test(a)) {
+      var made = a.slice(-1) == 'M', as = pick(['AST']);
+      r = row(e, e.side, { num: num(e.j), shot: a.charAt(2), made: made ? 1 : 0, miss: made ? 0 : 1 });
+      if (as) r.v.ast = who2(as); if (rb) reb(r, rb); trip = null;
+    } else if (a == 'FTM' || a == 'FTX') {
+      if (trip && trip.r.s == e.side && trip.left > 0) { r = trip.r; trip.left--; last = r; }
+      else { r = row(e, e.side, { num: num(e.j), ft: [] }); trip = null; }
+      if (!r.v.num) r.v.num = num(e.j);
+      if (r.v.ft.length < 3) r.v.ft.push(a == 'FTM' ? 1 : 0);
+      if (rb) reb(r, rb);
+    } else if (a == 'BLK') {   // the blocked shot: a missed shot by the other team (shooter not known), PAINT
+      r = row(e, oth, { num: '', shot: 'P', miss: 1, blk: who2(e) }); if (rb) reb(r, rb); trip = null;
+    } else if (a == 'TO') {
+      var st = pick(['STL']); r = row(e, e.side, { num: num(e.j), to: 1 }); if (st) r.v.stl = who2(st); trip = null;
+    } else if (a == 'STL') {
+      var tf = pick(['TO']); row(e, oth, { num: tf ? num(tf.j) : '', to: 1, stl: who2(e) }); trip = null;
+    } else if (a == 'PF') {
+      if (e.off) { row(e, e.side, { num: num(e.j), of: 1, to: 1 }); trip = null; }
+      else { r = row(e, oth, { num: e.ft ? '' : 't', df: who2(e), ft: [] }); trip = e.ft ? { r: r, left: e.ft } : null; }
+    } else if (a == 'OREB' || a == 'DREB' || a == 'TREB') {
+      // (2026-11-18) a rebound with no open miss right before it (logged later, after a made shot, a second one)
+      // gets its own row instead of being dropped: ORB in the rebounding team's block, DRB / team in the other's
+      var m = open();
+      if (m) reb(m, e);
+      else { if (a == 'OREB') row(e, e.side, { num: '', orb: who2(e) }); else row(e, oth, { num: '', drb: a == 'TREB' ? 't' : who2(e) }); trip = null; }
+    }
+    else if (a == 'AST') {
+      // (2026-11-18) an assist logged on its own joins the team's made basket just before it (replacing a SOMEONE);
+      // otherwise (logged first, after another play, a second one) it gets its own row instead of being dropped
+      if (last && last.v.made && last.s == e.side && (!last.v.ast || last.v.ast == '?')) last.v.ast = who2(e);
+      else { row(e, e.side, { num: '', ast: who2(e) }); trip = null; }
+    }
+  }
+  return rows;
+}
+
+var SHEET = { url: '', key: '', state: 'off', detail: '', sent: '', busy: false, again: false, wait: 1000, timer: null };
+(function () {   // the link + key: Settings, or opening the app once with ?sync=<link>&key=<word> (?sync=off clears)
+  function setting(name, param) {
+    var m = new RegExp('[?&]' + param + '=([^&]*)').exec(location.search), v;
+    try { if (m) { v = decodeURIComponent(m[1]); if (v == 'off' || v == '') localStorage.removeItem(name); else localStorage.setItem(name, v); } return localStorage.getItem(name) || ''; }
+    catch (err) { return m ? decodeURIComponent(m[1]) : ''; }
+  }
+  SHEET.url = setting('hardwood.syncUrl', 'sync'); SHEET.key = setting('hardwood.syncKey', 'key');
+})();
+function sheetBadge() {
+  var t = { off: 'NO SHEET', busy: 'SENDING…', ok: 'SHEET SYNCED', offline: 'SHEET OFFLINE', takeover: 'SHEET TOOK OVER', other: 'SHEET HAS ANOTHER GAME', error: 'SHEET ERROR' }[SHEET.state];
+  var el = $('syncChip'); el.textContent = t; el.title = SHEET.detail;
+  el.className = 'sync' + (SHEET.state == 'off' ? ' off' : SHEET.state == 'busy' ? ' busy' : SHEET.state == 'ok' ? '' : ' bad');
+  var ss = $('setStatus'); if (ss) ss.textContent = t + (SHEET.detail ? ' · ' + SHEET.detail : '');
+}
+function sheetSoon() { clearTimeout(SHEET.timer); if (!SHEET.url) { SHEET.state = 'off'; SHEET.detail = 'Settings > Stats sheet'; sheetBadge(); return; } SHEET.timer = setTimeout(sheetSend, 250); }
+function sheetSend() {
+  if (!SHEET.url) return;
+  if (SHEET.busy) { SHEET.again = true; return; }
+  var body = { game: { id: GAME.id, away: TEAM.A.name, home: TEAM.H.name }, rows: sheetRows() };
+  if (SHEET.key) body.key = SHEET.key;
+  var txt = JSON.stringify(body);
+  if (txt == SHEET.sent && SHEET.state != 'offline' && SHEET.state != 'error') { sheetBadge(); return; }
+  SHEET.busy = true; if (SHEET.state != 'takeover' && SHEET.state != 'other') SHEET.state = 'busy'; sheetBadge();
+  var ctl = typeof AbortController != 'undefined' ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 30000);
+  fetch(SHEET.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: txt, redirect: 'follow', cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { if (!r.ok) throw new Error('The sheet answered ' + r.status); return r.json(); })
+    .then(function (j) {
+      if (!j || !j.ok) { SHEET.state = 'error'; SHEET.detail = (j && j.error) || 'Bad answer'; SHEET.sent = ''; return; }
+      var st = j.sheet && j.sheet.state;
+      SHEET.state = st == 'TAKEOVER' ? 'takeover' : st == 'OTHER_GAME' ? 'other' : 'ok';
+      SHEET.detail = st == 'TAKEOVER' ? 'Someone typed in In Game row ' + j.sheet.row + ': the sheet keeps this game (Scorebook menu > Give this game back to the app)'
+        : st == 'OTHER_GAME' ? 'The sheet already has plays' + (j.sheet.row ? ' (row ' + j.sheet.row + ')' : '') + ' - Scorebook menu > New game in the sheet'
+        : 'In Game - ' + body.rows.length + ' rows';
+      SHEET.sent = txt; SHEET.wait = 1000;
+    })
+    .catch(function (err) {
+      SHEET.state = 'offline'; SHEET.detail = err && err.name == 'AbortError' ? 'No answer from the sheet' : 'Can\'t reach the sheet - retrying'; SHEET.sent = '';
+      clearTimeout(SHEET.timer); SHEET.timer = setTimeout(sheetSend, SHEET.wait); SHEET.wait = Math.min(SHEET.wait * 2, 30000);
+    })
+    .then(function () { clearTimeout(to); SHEET.busy = false; sheetBadge(); if (SHEET.again) { SHEET.again = false; sheetSoon(); } });
+}
+
+// ===== LIVE to PLAYBOOK through Firebase (2026-11-18) =====
+// The live code (from PLAYBOOK) = base64 of { k: Firebase API key, u: database URL, r: room }. Every change PUTs the
+// whole game - the same rows the sheet gets - to <database>/live/<room>.json, signed in anonymously. PLAYBOOK has a
+// connection open on that room and applies it the moment it lands. The sheet keeps getting everything as the backup.
+var FB = { code: '', cfg: null, tok: '', ref: '', exp: 0, busy: false, again: false, sent: '', state: 'off', detail: '', wait: 1000, timer: null };
+function fbParse(code) {
+  try { var j = JSON.parse(atob(String(code).trim().replace(/-/g, '+').replace(/_/g, '/'))); return j && j.k && j.u && j.r ? j : null; } catch (e) { return null; }
+}
+(function () {   // Settings, or opening the app once with ?live=<code> (?live=off clears)
+  var m = /[?&]live=([^&]*)/.exec(location.search), v = '';
+  try {
+    if (m) { v = decodeURIComponent(m[1]); if (v == 'off' || v == '') localStorage.removeItem('hardwood.live'); else localStorage.setItem('hardwood.live', v); }
+    v = localStorage.getItem('hardwood.live') || ''; FB.ref = localStorage.getItem('hardwood.liveRef') || '';
+  } catch (e) { v = m ? decodeURIComponent(m[1]) : ''; }
+  FB.code = v; FB.cfg = fbParse(v);
+})();
+// DEMO: the published test copy sets window.SCOREBOOK_DEMO (or open the app with ?demo). No sheet, no live link -
+// even if a link or code is on the device - and the how-to shows on the first visit (menu > HOW TO brings it back).
+var DEMO = !!window.SCOREBOOK_DEMO || /[?&]demo(=1)?(&|$)/.test(location.search);
+if (DEMO) { SHEET.url = ''; SHEET.key = ''; FB.code = ''; FB.cfg = null; }
+function demoSetup() {
+  if (!DEMO) return;
+  document.documentElement.classList.add('demo');
+  ['setUrl', 'setKey', 'setSave', 'setStatus', 'setLive', 'liveSave', 'liveStatus'].forEach(function (id) { var el = $(id), row = el && el.closest('.set'); if (row) row.classList.add('syncOnly'); });
+  var h = $('setUrl') && $('setUrl').closest('.card').querySelector('h2'); if (h) h.textContent = 'THIS DEVICE';
+  $('howToBtn').hidden = false;
+  var seen = false; try { seen = localStorage.getItem('hardwood.demoHelp') == '1'; } catch (e) { }
+  if (!seen) $('howTo').hidden = false;
+  $('howToGo').onclick = function () { $('howTo').hidden = true; try { localStorage.setItem('hardwood.demoHelp', '1'); } catch (e) { } };
+  $('howToBtn').onclick = function (ev) { ev.stopPropagation(); $('menu').hidden = true; $('howTo').hidden = false; };
+}
+function fbBadge() {
+  var t = { off: 'LIVE OFF', busy: 'LIVE…', ok: 'LIVE', offline: 'LIVE OFFLINE', error: 'LIVE ERROR' }[FB.state];
+  var el = $('liveChip'); if (el) { el.hidden = !FB.cfg; el.textContent = t; el.title = FB.detail; el.className = 'sync' + (FB.state == 'ok' ? '' : FB.state == 'busy' ? ' busy' : FB.state == 'off' ? ' off' : ' bad'); }
+  var ls = $('liveStatus'); if (ls) ls.textContent = FB.cfg ? t + (FB.detail ? ' · ' + FB.detail : '') : 'No live code';
+}
+function fbToken() {
+  if (FB.tok && Date.now() < FB.exp) return Promise.resolve(FB.tok);
+  var k = encodeURIComponent(FB.cfg.k), req = FB.ref
+    ? fetch('https://securetoken.googleapis.com/v1/token?key=' + k, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(FB.ref) })
+        .then(function (r) { return r.json(); }).then(function (j) { return { t: j.id_token, r: j.refresh_token, e: j.expires_in }; })
+    : fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + k, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"returnSecureToken":true}' })
+        .then(function (r) { return r.json(); }).then(function (j) { return { t: j.idToken, r: j.refreshToken, e: j.expiresIn }; });
+  return req.then(function (x) {
+    if (!x.t) { if (FB.ref) { FB.ref = ''; return fbToken(); } throw new Error('Firebase sign-in failed'); }
+    FB.tok = x.t; FB.ref = x.r || FB.ref; FB.exp = Date.now() + ((+x.e || 3600) - 120) * 1000;
+    try { localStorage.setItem('hardwood.liveRef', FB.ref); } catch (e) { }
+    return FB.tok;
+  });
+}
+function fbSend() {
+  if (!FB.cfg) { FB.state = 'off'; FB.detail = ''; fbBadge(); return; }
+  if (FB.busy) { FB.again = true; return; }
+  var txt = JSON.stringify({ game: { id: GAME.id, away: TEAM.A.name, home: TEAM.H.name }, rows: sheetRows() });
+  if (txt == FB.sent && FB.state == 'ok') return;
+  FB.busy = true; if (FB.state != 'ok') { FB.state = 'busy'; fbBadge(); }
+  var u = String(FB.cfg.u).replace(/\/+$/, '') + '/live/' + encodeURIComponent(FB.cfg.r) + '.json';
+  fbToken().then(function (t) {
+    return fetch(u + '?auth=' + encodeURIComponent(t), { method: 'PUT', body: txt.slice(0, -1) + ',"at":' + Date.now() + '}' });
+  }).then(function (r) {
+    if (r.status == 401) { FB.tok = ''; throw new Error('Firebase refused the sign-in'); }
+    if (!r.ok) throw new Error('Firebase answered ' + r.status);
+    FB.sent = txt; FB.state = 'ok'; FB.detail = 'PLAYBOOK gets every play straight away'; FB.wait = 1000;
+  }).catch(function (err) {
+    FB.state = 'offline'; FB.detail = (err && err.message) || 'Can\'t reach Firebase'; FB.sent = '';
+    clearTimeout(FB.timer); FB.timer = setTimeout(fbSend, FB.wait); FB.wait = Math.min(FB.wait * 2, 30000);
+  }).then(function () { FB.busy = false; fbBadge(); if (FB.again) { FB.again = false; fbSend(); } });
+}
+
+// ===== derive everything from EV =====
+var PTS = { FGPM: 2, FG2M: 2, FG3M: 3, FTM: 1 };
+// zone of a spot on the half court: P = paint (12' x 19'), 3 = past the 19'9" arc (straight in the corners), 2 = anything else
+// full court 940 x 500 (10 = 1 ft), baskets at (52.5, 250) and (887.5, 250); measured from the nearer basket
+function zoneAt(x, y) {
+  var left = x < 470, d = left ? x : 940 - x;   // feet from that baseline, x 10
+  if (d <= 190 && y >= 190 && y <= 310) return 'P';
+  if (d <= 52.5) return (y < 52.5 || y > 447.5) ? '3' : '2';
+  var dx = d - 52.5, dy = y - 250; return Math.sqrt(dx * dx + dy * dy) > 197.5 ? '3' : '2';
+}
+function derive() {
+  var box = { A: {}, H: {} }, score = { A: 0, H: 0 }, fouls = { A: 0, H: 0 }, team = { A: { treb: 0, tmo: 0 }, H: { treb: 0, tmo: 0 } };
+  function row(s, j) { return box[s][j] || (box[s][j] = { pts: 0, fgm: 0, fga: 0, pm: 0, pa: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0 }); }
+  for (var s in ROSTER) for (var j in ROSTER[s]) row(s, j);
+  EV.forEach(function (e) {
+    if (e.a == 'TREB') { team[e.side].treb++; return; } if (e.a == 'TMO') { team[e.side].tmo++; return; }
+    var r = row(e.side, e.j);
+    if (PTS[e.a]) { r.pts += PTS[e.a]; score[e.side] += PTS[e.a]; }
+    if (/^FG/.test(e.a)) { var mk = e.a.slice(-1) == 'M'; r.fga++; if (mk) r.fgm++; if (e.a.charAt(2) == '3') { r.tpa++; if (mk) r.tpm++; } if (e.a.charAt(2) == 'P') { r.pa++; if (mk) r.pm++; } }
+    if (e.a == 'FTM' || e.a == 'FTX') { r.fta++; if (e.a == 'FTM') r.ftm++; }
+    var k = { OREB: 'oreb', DREB: 'dreb', AST: 'ast', STL: 'stl', BLK: 'blk', TO: 'to', PF: 'pf' }[e.a]; if (k) r[k]++;
+    // (2026-11-15) a blocked shot is a missed shot (in the paint) for the other team, shooter not known - like the sheet's row
+    if (e.a == 'BLK') { var sh = row(e.side == 'A' ? 'H' : 'A', ''); sh.fga++; sh.pa++; }
+    if (e.a == 'PF' && e.per == PER) fouls[e.side]++;   // team fouls this quarter
+  });
+  return { box: box, score: score, fouls: fouls, team: team };
+}
+function lastName(s, j) { var n = ROSTER[s][j] || ''; return n.charAt(0) + '. ' + n.split(' ').slice(1).join(' ').toUpperCase(); }
+var WORDS = { FGPM: 'MADE IN THE PAINT', FGPX: 'MISSED IN THE PAINT', FG2M: '2PT MADE', FG2X: '2PT MISSED', FG3M: '3PT MADE', FG3X: '3PT MISSED', FTM: 'FREE THROW MADE', FTX: 'FREE THROW MISSED', OREB: 'OFFENSIVE REBOUND',
+  DREB: 'DEFENSIVE REBOUND', TREB: 'TEAM REBOUND', AST: 'ASSIST', STL: 'STEAL', BLK: 'BLOCK', TO: 'TURNOVER', PF: 'FOUL', TMO: 'TIMEOUT' };
+function who(s, j) { return j ? '#' + j + ' ' + lastName(s, j) : TEAM[s].name + ' (WHO?)'; }
+function teamOnly(e) { return e.a == 'TREB' || e.a == 'TMO'; }   // real team stats - never get a player
+function needsPlayer(e) { return !e.j && !teamOnly(e); }
+function evText(e) { return teamOnly(e) ? TEAM[e.side].name + ' ' + WORDS[e.a] : who(e.side, e.j) + ' ' + WORDS[e.a]; }
+
+// ===== entry: player -> action -> one follow-up =====
+var vsFold = {};   // TEAM STATS sections folded shut
+var sel = null, follow = null, tab = 'log', boxSide = 'A', boxHi = '';   // boxHi = the box score row lit up ('A|5')
+function other(s) { return s == 'A' ? 'H' : 'A'; }
+function commit(list) { var g = NEXT_ID; list.forEach(function (e) { e.per = PER; e.id = NEXT_ID++; e.g = g; EV.push(e); }); EV[EV.length - 1].last = list.length; sel = null; follow = null; render(); toast(list.map(evText).join('  +  ')); }
+// (2026-11-18) the main stat goes in the moment it's tapped - the score, the sheet and PLAYBOOK get it straight away;
+// the follow-up (assist, rebound, steal, free throws) is added to that same play when it's answered. Skipping the
+// question (or starting the next play) leaves the main stat as it is.
+function logThen(e, q, people, none, mk) {
+  commit([e]); sel = e.j ? { side: e.side, j: e.j } : null;
+  follow = { q: q, people: people, none: none, main: e, done: function (p) { if (p) addTo(e, mk(p)); else { follow = null; sel = null; render(); } } };
+  tab = 'log'; render();
+}
+// add x to e's play (its group), right after it
+function addTo(e, x) {
+  var k = EV.length - 1; while (k >= 0 && EV[k].g != e.g) k--;
+  if (k < 0) { follow = null; sel = null; render(); return; }   // the play was undone meanwhile
+  x.per = e.per; x.id = NEXT_ID++; x.g = e.g;
+  var n = 1; for (var i = k; i >= 0 && EV[i].g == e.g; i--) { delete EV[i].last; n++; }
+  EV.splice(k + 1, 0, x); EV[k + 1].last = n;
+  follow = null; sel = null; render(); toast(evText(e) + '  +  ' + evText(x));
+}
+function settle() {
+  if (!follow) return; var f = follow;
+  if (f.people && f.none != 'CANCEL') f.done(null);
+  else if (f.opts && f.opts[0] && f.opts[0].n === 0) f.done(f.opts[0]);
+  else { follow = null; render(); }
+}
+function act(a) {
+  if (follow) settle();
+  if (!sel) { if (a == 'TREB') { askTeam(); return; } toast('Tap the player first'); return; }
+  var e = { side: sel.side, j: sel.j, a: a };
+  function five(sd) { return ONFLOOR[sd].map(function (j) { return { side: sd, j: j }; }); }
+  function later(sd) { return { side: sd, j: '' }; }
+  if (a == 'FGPM' || a == 'FG2M' || a == 'FG3M') { logThen(e, 'ASSIST BY?', five(sel.side).filter(function (p) { return p.j != sel.j; }).concat([later(sel.side)]), 'NO ASSIST',
+      function (p) { return { side: p.side, j: p.j, a: 'AST' }; }); return; }
+  if (a == 'FGPX' || a == 'FG2X' || a == 'FG3X' || a == 'FTX') { logThen(e, 'REBOUND?', five(other(sel.side)).concat([later(other(sel.side))], five(sel.side), [later(sel.side)]), 'NO REBOUND',
+      function (p) { return { side: p.side, j: p.j, a: p.side == e.side ? 'OREB' : 'DREB' }; }); return; }
+  if (a == 'BLK') { var sh = other(sel.side); logThen(e, 'REBOUND?', five(sel.side).concat([later(sel.side)], five(sh), [later(sh)]), 'NO REBOUND',
+      function (p) { return { side: p.side, j: p.j, a: p.side == e.side ? 'DREB' : 'OREB' }; }); return; }
+  if (a == 'TO') { logThen(e, 'STOLEN BY?', five(other(sel.side)).concat([later(other(sel.side))]), 'NO STEAL',   // either one first: TO asks for the steal, STL for the turnover
+      function (p) { return { side: p.side, j: p.j, a: 'STL' }; }); return; }
+  if (a == 'STL') { logThen(e, 'TURNOVER BY?', five(other(sel.side)).concat([later(other(sel.side))]), 'NO TURNOVER',
+      function (p) { return { side: p.side, j: p.j, a: 'TO' }; }); return; }
+  if (a == 'PF') { var fe = e; commit([fe]); sel = { side: fe.side, j: fe.j };   // the foul is in; the answer adds free throws or makes it a charge
+    follow = { q: 'FREE THROWS?', main: fe, opts: [0, 1, 2, 3, -1].map(function (n) { return { label: n == 0 ? 'NONE' : n < 0 ? 'CHARGE (OFFENSIVE)' : n + ' FT', n: n }; }), done: function (o) {
+      if (o.n < 0) { fe.off = 1; addTo(fe, { side: fe.side, j: fe.j, a: 'TO' }); return; }   // an offensive foul is a turnover too (the sheet: OFOUL + TURNOVER)
+      follow = null; sel = null;
+      if (o.n) { fe.ft = o.n; render(); toast(who(fe.side, fe.j) + ' FOUL — now log ' + o.n + ' free throw' + (o.n > 1 ? 's' : '') + ' for the shooter'); } else render(); } }; render(); return; }
+  commit([e]);
+}
+// A shot from the court: the zone gives paint / 2 / 3, the half gives made (bottom) or missed (top). The spot itself is not kept.
+// Spots on the court that aren't shots (2026-11-14): the centre circle - top half TURNOVER, bottom half STEAL - and
+// the strip behind each backboard (baseline to backboard, paint width) = BLOCK.
+function spotAct(x, y) {
+  var dx = x - 470, dy = y - 250;
+  if (dx * dx + dy * dy <= 60 * 60) return y < 250 ? 'TO' : 'STL';
+  var d = x < 470 ? x : 940 - x;
+  if (d <= 40 && y >= 190 && y <= 310) return 'BLK';
+  return null;
+}
+var SPOT_WORDS = { TO: 'TURNOVER', STL: 'STEAL', BLK: 'BLOCK' };
+function shotAt(side, j, x, y) {
+  settle();
+  var sa = spotAct(x, y);
+  if (sa) { sel = { side: side, j: j }; act(sa); return; }
+  var z = zoneAt(x, y), made = y > 250, a = 'FG' + z + (made ? 'M' : 'X');
+  sel = { side: side, j: j }; act(a);
+}
+function shotName(x, y) { var sa = spotAct(x, y); if (sa) return SPOT_WORDS[sa]; var z = zoneAt(x, y); return (z == 'P' ? 'PAINT' : z == '3' ? '3-POINTER' : '2-POINTER') + ' \u00B7 ' + (y > 250 ? 'MADE' : 'MISSED'); }
+function ask(q, people, noneLabel, done) {
+  follow = { q: q, people: people, none: noneLabel, done: done }; tab = 'log'; render();   // the FOLLOW-UP card lives on SCORE GAME
+}
+function assign(i, j) {
+  var e = EV[i]; if (!e || teamOnly(e)) return;
+  e.j = j; follow = null; sel = null; render(); toast(evText(e) + ' ' + DASH + ' assigned');
+}
+function askAssign(i) {
+  var e = EV[i], s = e.side, all = ONFLOOR[s].concat(Object.keys(ROSTER[s]).filter(function (j) { return ONFLOOR[s].indexOf(j) < 0; }));
+  ask('WHO WAS IT? ' + evText(e) + ' (' + perShort(e) + ')', all.map(function (j) { return { side: s, j: j }; }), 'CANCEL',
+    function (p) { if (p) assign(i, p.j); else { follow = null; render(); } });
+}
+function askTeam() { follow = { q: 'TEAM REBOUND FOR?', opts: [{ label: TEAM.A.name, s: 'A' }, { label: TEAM.H.name, s: 'H' }], done: function (o) { commit([{ side: o.s, a: 'TREB' }]); } }; render(); }
+
+// ===== the court =====
+var NS = 'http://www.w3.org/2000/svg';
+function svg(tag, at, parent) { var e = document.createElementNS(NS, tag); for (var k in at) e.setAttribute(k, at[k]); (parent || $('court')).appendChild(e); return e; }
+function txt(x, y, t, cls) { var e = svg('text', { x: x, y: y, class: 'zl' + (cls ? ' ' + cls : '') }); e.textContent = t; }
+// Team colours (the PLAYBOOK team files' primary colours). With a player picked - or dragged - the court turns his
+// team's colour, muted the way PLAYBOOK's HARDWOOD court does it, so it's plain whose play is going in.
+var COLOUR = { A: '#7028B8', H: '#01F8FB' };
+function muted(hex) { var m = String(hex || '').match(/^#?([0-9a-f]{6})$/i); if (!m) return '#c8955c'; var n = parseInt(m[1], 16), v = [n >> 16, (n >> 8) & 255, n & 255], g = [88, 92, 98], f = .55;
+  return '#' + v.map(function (x, i) { return ('0' + Math.round(x + (g[i] - x) * f).toString(16)).slice(-2); }).join(''); }
+function courtSide() { return drag && drag.moved ? drag.side : sel ? sel.side : null; }
+function drawCourt() {
+  var c = $('court'), cs = courtSide(); c.innerHTML = '';
+  svg('rect', { x: 0, y: 0, width: 940, height: 500, style: 'fill:' + (cs ? muted(COLOUR[cs]) : '#c8955c') });
+  for (var i = 1; i < 25; i++) svg('line', { x1: 0, y1: i * 20, x2: 940, y2: i * 20, style: 'stroke:rgba(0,0,0,.06);stroke-width:2' });   // boards
+  svg('rect', { x: 0, y: 0, width: 940, height: 250, style: 'fill:#b3261e;opacity:.2' });     // top half: MISSED
+  svg('rect', { x: 0, y: 250, width: 940, height: 250, style: 'fill:#1b7f3b;opacity:.22' });  // bottom half: MADE
+  [0, 940].forEach(function (x0) {   // each end: paint (darker), free-throw circle, 3-point line, basket
+    var dir = x0 == 0 ? 1 : -1, px = dir > 0 ? 0 : 750;
+    svg('rect', { x: px, y: 190, width: 190, height: 120, style: 'fill:rgba(20,26,33,.28)' });
+    svg('rect', { x: px, y: 190, width: 190, height: 120, class: 'ln' });
+    svg('circle', { cx: x0 + dir * 190, cy: 250, r: 60, class: 'ln' });
+    svg('path', { d: 'M' + x0 + ' 52.5 L' + (x0 + dir * 52.5) + ' 52.5 A197.5 197.5 0 0 ' + (dir > 0 ? 1 : 0) + ' ' + (x0 + dir * 52.5) + ' 447.5 L' + x0 + ' 447.5', class: 'ln' });
+    svg('line', { x1: x0 + dir * 40, y1: 220, x2: x0 + dir * 40, y2: 280, style: 'stroke:#fff;stroke-width:5' });
+    svg('circle', { cx: x0 + dir * 52.5, cy: 250, r: 9, style: 'fill:none;stroke:#ff7a1a;stroke-width:4' });
+  });
+  svg('line', { x1: 470, y1: 0, x2: 470, y2: 500, class: 'ln' }); svg('circle', { cx: 470, cy: 250, r: 60, class: 'ln' });
+  svg('rect', { x: 1.5, y: 1.5, width: 937, height: 497, class: 'ln' });
+  svg('line', { x1: 0, y1: 250, x2: 940, y2: 250, style: 'stroke:#fff;stroke-width:3;stroke-dasharray:12 9' });   // MISSED above / MADE below
+  // the non-shot spots, shaded so they read as buttons: centre circle (TURNOVER top / STEAL bottom), behind each backboard (BLOCK)
+  svg('circle', { cx: 470, cy: 250, r: 60, style: 'fill:rgba(20,26,33,.45)' });
+  svg('line', { x1: 410, y1: 250, x2: 530, y2: 250, style: 'stroke:#fff;stroke-width:3' });
+  [0, 900].forEach(function (bx) { svg('rect', { x: bx, y: 190, width: 40, height: 120, style: 'fill:rgba(20,26,33,.55)' }); });
+  svg('g', { id: 'hl' });   // the zone being dropped into (highlight(), while dragging)
+  // zone labels last, on top (both ends, mirrored)
+  [[0, 1], [940, -1]].forEach(function (b) {
+    var X = function (x) { return b[0] + b[1] * x; };
+    txt(X(95), 228, 'PAINT MISSED', 's'); txt(X(95), 284, 'PAINT MADE', 's');
+    txt(X(150), 135, '2 MISSED'); txt(X(150), 375, '2 MADE');
+    txt(X(330), 70, '3 MISSED'); txt(X(330), 440, '3 MADE');
+  });
+  txt(470, 236, 'TURNOVER', 's'); txt(470, 276, 'STEAL', 's');
+  [[20, -90], [920, 90]].forEach(function (b) {   // BLOCK, written up the strip behind each backboard
+    var e = svg('text', { x: b[0], y: 250, class: 'zl s', transform: 'rotate(' + b[1] + ' ' + b[0] + ' 250)', dy: '4' }); e.textContent = 'BLOCK';
+  });
+  txt(235, 22, '\u25C0 ' + TEAM.H.name + ' SHOOTS HERE', 's'); txt(705, 22, TEAM.A.name + ' SHOOTS HERE \u25B6', 's');
+}
+// Light up the zone + half under the pointer, following the real lines: the paint, inside the arc, outside it.
+function arcShape(left) { return left ? 'M0 52.5 L52.5 52.5 A197.5 197.5 0 0 1 52.5 447.5 L0 447.5 Z' : 'M940 52.5 L887.5 52.5 A197.5 197.5 0 0 0 887.5 447.5 L940 447.5 Z'; }
+function highlight(pt) {
+  var g = $('hl'); if (!g) return; g.innerHTML = ''; if (!pt) return;
+  var sa = spotAct(pt.x, pt.y);
+  if (sa == 'TO' || sa == 'STL') { svg('path', { d: sa == 'TO' ? 'M410 250 A60 60 0 0 1 530 250 Z' : 'M410 250 A60 60 0 0 0 530 250 Z', style: 'fill:#f5b041;opacity:.7' }, g); return; }
+  if (sa == 'BLK') { svg('rect', { x: pt.x < 470 ? 0 : 900, y: 190, width: 40, height: 120, style: 'fill:#f5b041;opacity:.7' }, g); return; }
+  var left = pt.x < 470, made = pt.y > 250, z = zoneAt(pt.x, pt.y), px = left ? 0 : 750, col = made ? '#2ecc71' : '#ff4d40';
+  var paint = { x: px, y: 190, width: 190, height: 120 }, otherHalf = { x: 0, y: made ? 0 : 250, width: 940, height: 250 };
+  if (z == 'P') { svg('rect', { x: px, y: made ? 250 : 190, width: 190, height: 60, style: 'fill:' + col + ';opacity:.55' }, g); return; }
+  var m = svg('mask', { id: 'hlm', maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: 940, height: 500 }, g);
+  if (z == '2') { svg('path', { d: arcShape(left), style: 'fill:#fff' }, m); svg('rect', Object.assign({ style: 'fill:#000' }, paint), m); }
+  else { svg('rect', { x: left ? 0 : 470, y: 0, width: 470, height: 500, style: 'fill:#fff' }, m); svg('path', { d: arcShape(left), style: 'fill:#000' }, m); }
+  svg('rect', Object.assign({ style: 'fill:#000' }, otherHalf), m);
+  svg('rect', { x: 0, y: 0, width: 940, height: 500, mask: 'url(#hlm)', style: 'fill:' + col + ';opacity:.5' }, g);
+}
+function courtPoint(cx, cy) {
+  var r = $('court').getBoundingClientRect();
+  if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null;
+  return { x: (cx - r.left) / r.width * 940, y: (cy - r.top) / r.height * 500 };
+}
+
+// ===== render =====
+function render() {
+  saveGame(); sheetSoon(); fbSend();
+  $('perT').textContent = perName(PER);
+  var d = derive(); drawCourt();
+  $('scA').textContent = d.score.A; $('scH').textContent = d.score.H;
+  ['A', 'H'].forEach(function (s) {
+    var f = $('foul' + s); f.textContent = 'FOULS ' + d.fouls[s] + (d.fouls[s] >= 7 ? ' · BONUS' : ''); f.classList.toggle('bonus', d.fouls[s] >= 7);
+    var pickSet = [];   // (2026-11-14) follow-up questions are answered in the FOLLOW-UP card, not on the team cards
+    var teamTile = '<button class="pt team ' + (s == 'A' ? 'a' : 'h') + (sel && sel.side == s && sel.j === '' ? ' sel' : '') + (pickSet.indexOf('') >= 0 ? ' pick' : '') + '" data-p="' + s + '|"><span class="j">?</span>' +
+      '<span class="n"><b>' + (pickSet.indexOf('') >= 0 ? 'SOMEONE ' + '\u2014' + ' ASSIGN LATER' : TEAM[s].name + ' ' + '\u2014' + ' NO PLAYER') + '</b><span>' + (pickSet.indexOf('') >= 0 ? 'you can pick the player in the play log' : 'log it now, assign the player later') + '</span></span><span></span></button>';
+    $('floor' + s).innerHTML = teamTile + ONFLOOR[s].map(function (j) {
+      var r = d.box[s][j], cls = 'pt ' + (s == 'A' ? 'a' : 'h') + (r.pf >= 5 ? ' f5' : r.pf >= 4 ? ' f4' : '') + (sel && sel.side == s && sel.j == j ? ' sel' : '') + (pickSet.indexOf(j) >= 0 ? ' pick' : '');
+      var pf = ''; for (var i = 1; i <= 5; i++) pf += '<i class="' + (i <= r.pf ? 'on' : '') + '"></i>';
+      return '<button class="' + cls + '" data-p="' + s + '|' + j + '"><span class="j num">' + j + '</span><span class="n"><b>' + esc(ROSTER[s][j]) + '</b><span class="num">' + r.fgm + '-' + r.fga + ' FG &middot; ' + (r.oreb + r.dreb) + ' REB &middot; ' + r.ast + ' AST</span></span>' +
+        '<span><div class="pts num">' + r.pts + '</div><div class="pf" title="fouls">' + pf + '</div></span></button>';
+    }).join('');
+    $('bench' + s).innerHTML = Object.keys(ROSTER[s]).filter(function (j) { return ONFLOOR[s].indexOf(j) < 0; }).map(function (j) { return '<button class="' + (pickSet.indexOf(j) >= 0 ? 'pick' : '') + (sel && sel.side == s && sel.j == j ? ' sel' : '') + '" data-bench="' + s + '|' + j + '" title="' + esc(ROSTER[s][j]) + '">#' + j + '</button>'; }).join('');
+    // the question for this team, on its own card
+    $('ask' + s).hidden = true;
+  });
+  var se = $('sentence');
+  if (follow) { se.textContent = (sel ? who(sel.side, sel.j) + ' \u2014 ' : '') + follow.q; se.classList.add('ready'); }
+  else if (sel) { se.textContent = who(sel.side, sel.j) + (sel.j ? ' (' + TEAM[sel.side].name + ')' : '') + ' \u2014 tap the court for a shot, or a button'; se.classList.add('ready'); }
+  else { se.textContent = 'Drag a player onto the court for a shot, or tap a player for anything else'; se.classList.remove('ready'); }
+  var fb = $('follow'); fb.classList.toggle('live', !!(follow && follow.people)); $('logView').classList.toggle('asking', !!follow);
+  if (!follow) fb.innerHTML = '<span class="q muted">Follow-up questions show here (assist, rebound, free throws)</span>';
+  else if (follow.people) {
+    // the FOLLOW-UP card: the question, a row of players per team (in the order the question lists them), and the NO ... button
+    var order = [], h2 = '<div class="fuHead"><span class="q">' + (sel ? esc(who(sel.side, sel.j)) + ' — ' : '') + esc(follow.q) + '</span><button class="none" data-f="-1">' + esc(follow.none) + '</button></div>';
+    follow.people.forEach(function (p) { if (order.indexOf(p.side) < 0) order.push(p.side); });
+    order.forEach(function (sd) {
+      h2 += '<div class="fuRow"><span class="fuTeam" style="background:var(--' + (sd == 'A' ? 'away' : 'home') + ');color:var(--' + (sd == 'A' ? 'away' : 'home') + '-ink)">' + TEAM[sd].short + '</span>' +
+        follow.people.map(function (p, i) { if (p.side != sd) return '';
+          return p.j ? '<button class="fp" data-f="' + i + '"><b class="num">' + p.j + '</b>' + esc(String(ROSTER[sd][p.j] || '').split(' ').slice(1).join(' ').toUpperCase()) + '</button>'
+                     : '<button class="fp some" data-f="' + i + '"><b>?</b>SOMEONE</button>'; }).join('');
+      var listed = follow.people.filter(function (p) { return p.side == sd; }).map(function (p) { return p.j; });
+      var bench = Object.keys(ROSTER[sd]).filter(function (j) { return listed.indexOf(j) < 0 && !(follow.q == 'ASSIST BY?' && sel && sel.side == sd && sel.j == j); }), open = follow.bench && follow.bench[sd];
+      if (bench.length) h2 += '<button class="fp more' + (open ? ' on' : '') + '" data-fb="' + sd + '">BENCH ' + (open ? '▴' : '▾') + '</button>';
+      h2 += '</div>';
+      if (bench.length && open) h2 += '<div class="fuBench">' + bench.map(function (j) { return '<button data-fbj="' + sd + '|' + j + '" title="' + esc(ROSTER[sd][j]) + '">#' + j + '</button>'; }).join('') + '</div>';
+    });
+    fb.innerHTML = h2;
+  }
+  else fb.innerHTML = '<span class="q">' + follow.q + '</span>' + follow.opts.map(function (o, i) { return '<button data-o="' + i + '">' + esc(o.label) + '</button>'; }).join('');
+
+  var need = EV.filter(needsPlayer).length, pb = document.querySelector('#tabs [data-tab="plays"]');
+  pb.textContent = 'PLAY LOG' + (need ? ' (' + need + ')' : '');   // (n) = plays still waiting for a player
+ pb.classList.toggle('need', need > 0);
+  renderTab(d);
+}
+function renderTab(d) {
+  document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab == tab); });
+  var body = $('tabBody');
+  $('logView').hidden = tab != 'log'; body.hidden = tab == 'log'; body.classList.toggle('boxMode', tab == 'box'); body.classList.toggle('vsMode', tab == 'team');
+  if (tab == 'log') { body.innerHTML = ''; return; }
+  if (tab == 'box') {
+    // (2026-11-14) both teams at once: AWAY on top, HOME below. Each half scrolls on its own; its column heads and
+    // TEAM totals stay put. A player shows up once he has a stat. Number + last name; columns by priority.
+    function pct(m, a) { return a ? Math.round(m / a * 100) + '%' : '-'; }
+    var cols = ['pts', 'fgm', 'fga', 'pm', 'pa', 'tpm', 'tpa', 'ftm', 'fta', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'];
+    function any(r) { return r && cols.some(function (c) { return r[c]; }); }
+    function cells(r, treb, pfCls) {
+      return [r.pts, r.oreb + r.dreb + (treb || 0), r.ast, r.stl, r.blk, r.tpm + '-' + r.tpa, r.ftm + '-' + r.fta, r.fgm + '-' + r.fga, pct(r.fgm, r.fga), r.oreb, r.dreb, r.to]
+        .map(function (v, i) { return '<td class="num' + (i == 0 ? ' b' : '') + '">' + v + '</td>'; }).join('') + '<td class="num ' + (pfCls || '') + '">' + r.pf + '</td>';
+    }
+    var COLG = '<colgroup><col><col style=\"width:28px\"><col style=\"width:28px\"><col style=\"width:28px\"><col style=\"width:26px\"><col style=\"width:26px\"><col style=\"width:38px\"><col style=\"width:36px\"><col style=\"width:42px\"><col style=\"width:36px\"><col style=\"width:34px\"><col style=\"width:34px\"><col style=\"width:24px\"><col style=\"width:24px\"></colgroup>';
+    var MINI = '<tr class="mini"><td class="l"></td>' + ['PTS', 'REB', 'AST', 'STL', 'BLK', '3PT', 'FT', 'FG', 'FG%', 'OREB', 'DREB', 'TO', 'PF'].map(function (x) { return '<td>' + x + '</td>'; }).join('') + '</tr>';
+    function half(s) {
+      var t = {}; cols.forEach(function (c) { t[c] = 0; });
+      function last(j) { var n = String(ROSTER[s][j] || '').split(' '); return n.slice(1).join(' ').toUpperCase() || n[0].toUpperCase(); }
+      var rows = Object.keys(ROSTER[s]).filter(function (j) { return any(d.box[s][j]); }).sort(function (x, y) { return d.box[s][y].pts - d.box[s][x].pts || Number(x) - Number(y); });
+      var head = '<thead><tr><th class="l"><span class="tm" style="background:var(--' + (s == 'A' ? 'away' : 'home') + ')"></span>' + TEAM[s].name + '</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>3PT</th><th>FT</th><th>FG</th><th>FG%</th><th>OREB</th><th>DREB</th><th>TO</th><th>PF</th></tr></thead>', h = '';
+      rows.forEach(function (j) {
+        var r = d.box[s][j], on = ONFLOOR[s].indexOf(j) >= 0; cols.forEach(function (c) { t[c] += r[c]; });
+        if (boxHi == s + '|' + j) h += MINI;   // the highlighted player gets the column names right above him
+        h += '<tr data-row="' + s + '|' + j + '" class="' + (on ? 'on' : '') + (boxHi == s + '|' + j ? ' hi' : '') + '"><td class="l">' + (on ? '<span class="dot" title="on the floor"></span>' : '') + '<span class="num">#' + j + '</span> ' + esc(last(j)) + '</td>' + cells(r, 0, r.pf >= 5 ? 'out' : r.pf >= 4 ? 'hot' : '') + '</tr>';
+      });
+      var u = d.box[s][''];
+      if (any(u)) { cols.forEach(function (c) { t[c] += u[c]; }); h += '<tr class="need"><td class="l">? NOT ASSIGNED</td>' + cells(u) + '</tr>'; }
+      if (!rows.length && !any(u)) h += '<tr><td class="l muted" colspan="14">No stats yet - players show up here once they have one</td></tr>';
+      // the column heads + TEAM totals sit on top and stay put; the players under them scroll
+      return '<div class="boxHalf"><div class="boxTot"><table class="box">' + COLG + head + '<tbody><tr class="tot"><td class="l">TEAM' + (d.team[s].treb ? ' <span class="muted" style="font-weight:700">(+' + d.team[s].treb + ' team reb)</span>' : '') + '</td>' + cells(t, d.team[s].treb) + '</tr></tbody></table></div><div class="boxScroll"><table class="box">' + COLG + '<tbody>' + h + '</tbody></table></div></div>';
+    }
+    body.innerHTML = '<div class="boxSplit">' + half('A') + half('H') + '</div>';
+  } else if (tab == 'plays') {
+    var sc = { A: 0, H: 0 }, out = EV.map(function (e, i) { if (PTS[e.a]) sc[e.side] += PTS[e.a]; return { e: e, i: i, s: sc.A + '-' + sc.H }; }).reverse().slice(0, 60);
+    body.innerHTML = '<div id="plays">' + out.map(function (o) {
+      return '<div class="pl' + (PTS[o.e.a] ? ' score' : '') + (needsPlayer(o.e) ? ' need' : '') + '" data-i="' + o.i + '"><span class="num muted">' + perShort(o.e) + '</span><span class="bar" style="background:var(--' + (o.e.side == 'A' ? 'away' : 'home') + ')"></span><span class="x">' + esc(evText(o.e)) + '</span><span class="s num">' + o.s + '</span><button data-del="' + o.i + '" title="take this play out">FIX</button></div>';
+    }).join('') + '</div>';
+  } else {
+    var T = { A: {}, H: {} };
+    ['A', 'H'].forEach(function (s) { var x = T[s]; ['pts', 'fgm', 'fga', 'pm', 'pa', 'tpm', 'tpa', 'ftm', 'fta', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'to', 'pf'].forEach(function (c) { x[c] = 0; for (var j in d.box[s]) x[c] += d.box[s][j][c]; }); x.reb = x.oreb + x.dreb + d.team[s].treb; });
+    function pc(m, a) { return a ? ' (' + Math.round(m / a * 100) + '%)' : ''; }
+    function ma(m, a) { return m + '-' + a; }
+    ['A', 'H'].forEach(function (k) { var x = T[k]; x.o2m = x.fgm - x.pm - x.tpm; x.o2a = x.fga - x.pa - x.tpa; x.treb = d.team[k].treb; x.tf = d.fouls[k]; });
+    // [label, value(T), bar value(T)] - '#' starts a section, two spaces = a sub row
+    var ROWS = [
+      ['#Shooting'],
+      ['Field goals', function (x) { return ma(x.fgm, x.fga) + pc(x.fgm, x.fga); }, function (x) { return x.fgm; }],
+      ['  In the paint', function (x) { return ma(x.pm, x.pa) + pc(x.pm, x.pa); }],
+      ['  Other 2s', function (x) { return ma(x.o2m, x.o2a) + pc(x.o2m, x.o2a); }],
+      ['3-pointers', function (x) { return ma(x.tpm, x.tpa) + pc(x.tpm, x.tpa); }, function (x) { return x.tpm; }],
+      ['Free throws', function (x) { return ma(x.ftm, x.fta) + pc(x.ftm, x.fta); }, function (x) { return x.ftm; }],
+      ['#Scoring'],
+      ['Points in the paint', function (x) { return x.pm * 2; }, function (x) { return x.pm * 2; }],
+      ['Points from 3', function (x) { return x.tpm * 3; }],
+      ['Points from the line', function (x) { return x.ftm; }],
+      ['#Rebounds'],
+      ['Rebounds', function (x) { return x.reb; }, function (x) { return x.reb; }],
+      ['  Offensive', function (x) { return x.oreb; }],
+      ['  Defensive', function (x) { return x.dreb; }],
+      ['  Team', function (x) { return x.treb; }],
+      ['#Ball control'],
+      ['Assists', function (x) { return x.ast; }, function (x) { return x.ast; }],
+      ['Turnovers', function (x) { return x.to; }, function (x) { return x.to; }],
+      ['Steals', function (x) { return x.stl; }],
+      ['Blocks', function (x) { return x.blk; }],
+      ['#Fouls'],
+      ['Fouls', function (x) { return x.pf; }, function (x) { return x.pf; }],
+      ['  Team fouls (bonus count)', function (x) { return x.tf; }]
+    ];
+    var out = ['<table class="vs"><thead><tr><th></th><th class="a">' + TEAM.A.short + '</th><th class="h">' + TEAM.H.short + '</th></tr>' +
+      '<tr class="score"><td>Score</td><td>' + d.score.A + '</td><td>' + d.score.H + '</td></tr></thead><tbody>'], sec = '';
+    ROWS.forEach(function (r) {
+      if (r[0].charAt(0) == '#') { sec = r[0].slice(1); var fo = !!vsFold[sec];
+        out.push('<tr class="sec' + (fo ? ' folded' : '') + '" data-sec="' + sec + '"><th colspan="3"><span class="arr">' + (fo ? '▸' : '▾') + '</span>' + esc(sec) + '</th></tr>'); return; }
+      if (vsFold[sec]) return;
+      out.push('<tr' + (r[0].indexOf('  ') == 0 ? ' class="sub"' : '') + '><td>' + esc(r[0].trim()) + '</td><td>' + esc(r[1](T.A)) + '</td><td>' + esc(r[1](T.H)) + '</td></tr>');
+      if (r[2]) { var va = Math.max(0, r[2](T.A)), vh = Math.max(0, r[2](T.H)), tt = va + vh;
+        out.push('<tr class="cmp"><td colspan="3"><div><i class="a" style="flex-grow:' + (tt ? va : 1) + '"></i><i class="h" style="flex-grow:' + (tt ? vh : 1) + '"></i></div></td></tr>'); }
+    });
+    out.push('</tbody></table>');
+    body.innerHTML = '<div class="vsTop"><button class="tiny" data-vsall="1">' + (ROWS.every(function (r) { return r[0].charAt(0) != '#' || vsFold[r[0].slice(1)]; }) ? 'OPEN ALL' : 'COLLAPSE ALL') + '</button></div>' + out.join('');
+  }
+}
+
+// ===== clicks =====
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+var toastT = null; function toast(t) { if (!t) return; var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, 2600); }
+var drag = null, dragAt = 0, dragEl = null;
+document.addEventListener('click', function (ev) {
+  var r = ev.target.closest('.vs tr.sec'); if (!r) return; vsFold[r.dataset.sec] = !vsFold[r.dataset.sec]; render();
+});
+document.addEventListener('pointerdown', function (ev) {
+  var t = ev.target.closest('.pt, .bench button'); if (!t) return;
+  var p = (t.dataset.p != null ? t.dataset.p : t.dataset.bench).split('|'); drag = { el: t, side: p[0], j: p[1], x0: ev.clientX, y0: ev.clientY, moved: false };
+});
+document.addEventListener('pointermove', function (ev) {
+  if (!drag) return;
+  if (!drag.moved && Math.abs(ev.clientX - drag.x0) + Math.abs(ev.clientY - drag.y0) < 10) return;
+  if (!drag.moved) { settle(); drag.moved = true; drag.el.classList.add('drag'); var g = $('ghost'); g.textContent = drag.j ? '#' + drag.j : TEAM[drag.side].short + ' ?'; g.style.background = 'var(--' + (drag.side == 'A' ? 'away' : 'home') + ')'; g.style.color = 'var(--' + (drag.side == 'A' ? 'away' : 'home') + '-ink)'; g.hidden = false; drawCourt(); }
+  var g2 = $('ghost'); g2.style.left = ev.clientX + 'px'; g2.style.top = ev.clientY + 'px';
+  var pt = courtPoint(ev.clientX, ev.clientY), se = $('sentence'), row = playRowAt(ev.clientX, ev.clientY, drag);
+  $('courtBox').classList.toggle('over', !!pt); highlight(pt);
+  document.querySelectorAll('.pl.drop').forEach(function (r) { r.classList.remove('drop'); }); if (row) row.classList.add('drop');
+  se.textContent = who(drag.side, drag.j) + (pt ? ' \u2192 ' + shotName(pt.x, pt.y) : row ? ' \u2192 ASSIGN TO: ' + evText(EV[Number(row.dataset.i)]) : ' \u2014 drop on the court, or on a play to assign it'); se.classList.add('ready');
+});
+document.addEventListener('pointerup', function (ev) {
+  if (!drag) return; var d = drag; drag = null;
+  d.el.classList.remove('drag'); $('ghost').hidden = true; $('courtBox').classList.remove('over');
+  if (!d.moved) { if (!d.el.isConnected) render(); return; }
+  dragAt = Date.now(); dragEl = d.el;
+  var pt = courtPoint(ev.clientX, ev.clientY), row = playRowAt(ev.clientX, ev.clientY, d);
+  if (pt) shotAt(d.side, d.j, pt.x, pt.y); else if (row) assign(Number(row.dataset.i), d.j); else render();
+});
+// a play in the log under the pointer that this player can be put on (same team, not a team-only stat)
+function playRowAt(cx, cy, dr) {
+  if (!dr || !dr.j) return null;
+  var el = document.elementFromPoint(cx, cy), row = el && el.closest ? el.closest('.pl[data-i]') : null;
+  if (!row) return null; var e = EV[Number(row.dataset.i)];
+  return e && e.side == dr.side && !teamOnly(e) ? row : null;
+}
+document.addEventListener('pointercancel', function () { if (drag) { drag.el.classList.remove('drag'); drag = null; $('ghost').hidden = true; render(); } });
+$('court').addEventListener('click', function (ev) {
+  if (Date.now() - dragAt < 400) return;
+  if (follow) settle();
+  if (!sel) { toast('Drag a player here, or tap a player first'); return; }
+  var pt = courtPoint(ev.clientX, ev.clientY); if (pt) shotAt(sel.side, sel.j, pt.x, pt.y);
+});
+var subFor = null;
+document.addEventListener('click', function (ev) {
+  if (Date.now() - dragAt < 400 && dragEl && dragEl.contains(ev.target)) return;   // the click the dragged tile gets when the drag ends
+  var br = ev.target.closest('tr[data-row]');   // box score: tap a player's row to light it up, tap again to clear
+  if (br) { boxHi = boxHi == br.dataset.row ? '' : br.dataset.row; render(); return; }
+  var row = ev.target.closest('.pl.need');
+  if (row && !ev.target.closest('button')) { askAssign(Number(row.dataset.i)); return; }
+  var b = ev.target.closest('button'); if (!b) return;
+  if (b.id == 'perBtn') { var pm = $('perMenu'); if (pm.hidden) { var top = Math.max(7, PER + 1), h = ''; for (var n = 1; n <= top; n++) h += '<button data-per="' + n + '"' + (n == PER ? ' class="on"' : '') + '>' + perName(n) + '</button>'; pm.innerHTML = h; }
+    pm.hidden = !pm.hidden; return; }
+  if (b.id == 'endPer') { if (!confirm('End the ' + perName(PER) + (PER <= 4 ? ' quarter' : '') + '? New plays go in the ' + perName(PER + 1) + '.')) return;
+    PER++; render(); toast(perName(PER) + (PER <= 4 ? ' QUARTER' : '') + ' - new plays go in here'); return; }
+  if (b.dataset.per) { PER = Number(b.dataset.per); $('perMenu').hidden = true; render(); toast(perName(PER) + (PER <= 4 ? ' QUARTER' : '') + ' - new plays go in here'); return; }
+  if (b.dataset.fb && follow) { follow.bench = follow.bench || {}; follow.bench[b.dataset.fb] = !follow.bench[b.dataset.fb]; render(); return; }
+  if (b.dataset.fbj && follow) { var fq = b.dataset.fbj.split('|'); follow.done({ side: fq[0], j: fq[1] }); return; }
+  if (b.dataset.p) {
+    var p = b.dataset.p.split('|'), who = { side: p[0], j: p[1] };
+    if (follow) settle();
+    if (subFor && subFor == p[0]) { toast('Now tap the bench player coming in for #' + p[1]); subFor = { side: p[0], out: p[1] }; return; }
+    sel = sel && sel.side == who.side && sel.j == who.j ? null : who; if (sel) tab = 'log'; render(); return;
+  }
+  if (b.dataset.f != null) { var i = Number(b.dataset.f); follow.done(i < 0 ? null : follow.people[i]); return; }
+  if (b.dataset.o != null) { follow.done(follow.opts[Number(b.dataset.o)]); return; }
+  if (b.dataset.a) { act(b.dataset.a); return; }
+  if (b.dataset.tab) { tab = b.dataset.tab; render(); return; }
+  if (b.id == 'setSave') { SHEET.url = $('setUrl').value.trim(); SHEET.key = $('setKey').value.trim(); try { localStorage.setItem('hardwood.syncUrl', SHEET.url); localStorage.setItem('hardwood.syncKey', SHEET.key); } catch (err) { }
+    SHEET.sent = ''; SHEET.wait = 1000; toast(SHEET.url ? 'Sending the game to the sheet' : 'No sheet link'); sheetSoon(); return; }
+  if (b.id == 'liveSave') { var lc = $('setLive').value.trim(), cfg = fbParse(lc); if (!cfg) { toast('That is not a live code - copy it again from PLAYBOOK'); return; }
+    FB.code = lc; FB.cfg = cfg; FB.tok = ''; FB.ref = ''; FB.sent = ''; FB.wait = 1000; try { localStorage.setItem('hardwood.live', lc); localStorage.removeItem('hardwood.liveRef'); } catch (err) { } toast('Live code saved - sending to PLAYBOOK'); fbSend(); return; }
+  if (b.id == 'liveOff') { FB.code = ''; FB.cfg = null; FB.sent = ''; $('setLive').value = ''; try { localStorage.removeItem('hardwood.live'); localStorage.removeItem('hardwood.liveRef'); } catch (err) { } fbSend(); toast('Not sending live'); return; }
+  if (b.id == 'setOff') { SHEET.url = ''; $('setUrl').value = ''; try { localStorage.removeItem('hardwood.syncUrl'); } catch (err) { } sheetSoon(); toast('Not sending to the sheet'); return; }
+  if (b.id == 'newGame') { if (!confirm('Clear every play and start a new game? (The sheet keeps its rows - use its Scorebook menu > New game there.)')) return;
+    EV.length = 0; PER = 1; GAME = { id: 'hw-' + Date.now() }; SHEET.sent = ''; sel = null; follow = null; render(); toast('New game'); return; }
+  if (b.dataset.vsall) { var shut = b.textContent == 'COLLAPSE ALL'; document.querySelectorAll('.vs tr.sec').forEach(function (r) { vsFold[r.dataset.sec] = shut; }); render(); return; }
+  if (b.dataset.sub) { subFor = b.dataset.sub; toast('Tap the player going out'); return; }
+  if (b.dataset.bench) {
+    var q = b.dataset.bench.split('|');
+    if (subFor && subFor.out && subFor.side == q[0]) { ONFLOOR[q[0]][ONFLOOR[q[0]].indexOf(subFor.out)] = q[1]; toast('#' + q[1] + ' in for #' + subFor.out); subFor = null; render(); return; }
+    if (follow) settle();   // a bench player starts a new play, like any player
+    sel = sel && sel.side == q[0] && sel.j == q[1] ? null : { side: q[0], j: q[1] }; if (sel) tab = 'log'; render();
+    return;
+  }
+  if (b.dataset.del != null) { var e = EV.splice(Number(b.dataset.del), 1)[0]; toast('Taken out: ' + evText(e) + ' — every number re-worked'); render(); return; }
+  if (b.id == 'undo') { if (follow) { var fm = follow.main; follow = null; sel = null; if (!fm) { render(); return; } } var n = (EV[EV.length - 1] && EV[EV.length - 1].last) || 1, gone = EV.splice(EV.length - n, n); toast('Undone: ' + gone.map(evText).join(' + ')); render(); return; }
+  if (b.id == 'tmo') { if (!sel) { toast('Tap a player on the team calling it (or the team name)'); return; } commit([{ side: sel.side, a: 'TMO' }]); return; }
+});
+// ===== top bar menu + pages (GAME / ROSTERS / SETTINGS); the strip stays on every page =====
+var page = 'game', PAGES = { game: 'GAME', rosters: 'ROSTERS', settings: 'SETTINGS' };
+function closeMenu() { $('menu').hidden = true; $('menuBtn').setAttribute('aria-expanded', 'false'); }
+function showPage(p) {
+  page = p; closeMenu();
+  document.querySelectorAll('[data-for]').forEach(function (el) { el.hidden = el.dataset.for != p; });
+  document.querySelectorAll('#menu [data-page]').forEach(function (b) { b.classList.toggle('on', b.dataset.page == p); });
+  $('pgName').textContent = PAGES[p];
+  if (p == 'rosters') renderRosters();
+  if (p == 'settings') { $('setUrl').value = SHEET.url; $('setKey').value = SHEET.key; $('setLive').value = FB.code; sheetBadge(); fbBadge(); var t = document.documentElement.getAttribute('data-theme') || ''; document.querySelectorAll('[data-set="theme"] button').forEach(function (b) { b.classList.toggle('on', b.dataset.v == t); }); }
+}
+function renderRosters() {
+  var d = derive();
+  $('rosterCols').innerHTML = ['A', 'H'].map(function (s) {
+    var nums = Object.keys(ROSTER[s]).sort(function (x, y) { return Number(x) - Number(y); }), k = s == 'A' ? 'away' : 'home';
+    return '<div class="card"><div class="cardHead"><h2>' + TEAM[s].name + ' (' + TEAM[s].short + ')</h2><button class="tiny" disabled>+ ADD PLAYER</button></div>' +
+      '<div class="rr h"><span>#</span><span>NAME</span><span>PTS</span><span>FLS</span><span></span></div>' +
+      nums.map(function (j) { var r = d.box[s][j], on = ONFLOOR[s].indexOf(j) >= 0;
+        return '<div class="rr"><span class="j num" style="background:var(--' + k + ');color:var(--' + k + '-ink)">' + j + '</span><span>' + esc(ROSTER[s][j]) + '</span><span class="num">' + r.pts + '</span><span class="num">' + r.pf + '</span><span class="muted" style="font-size:.72em;font-weight:800">' + (on ? 'ON FLOOR' : '') + '</span></div>'; }).join('') + '</div>';
+  }).join('');
+}
+$('menuBtn').addEventListener('click', function (ev) { ev.stopPropagation(); var m = $('menu'); m.hidden = !m.hidden; this.setAttribute('aria-expanded', String(!m.hidden)); });
+$('menu').addEventListener('click', function (ev) { var b = ev.target.closest('[data-page]'); if (b) { ev.stopPropagation(); showPage(b.dataset.page); } });
+document.addEventListener('click', function (ev) {
+  if (!$('menu').hidden && !ev.target.closest('#menu')) closeMenu();
+  var sb = ev.target.closest('.seg button'); if (!sb) return;
+  sb.parentNode.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x == sb); });
+  if (sb.parentNode.dataset.set == 'theme') { if (sb.dataset.v) document.documentElement.setAttribute('data-theme', sb.dataset.v); else document.documentElement.removeAttribute('data-theme'); }
+});
+demoSetup();
+render(); showPage('game');
+</script>
